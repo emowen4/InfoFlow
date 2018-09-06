@@ -259,18 +259,18 @@ class UpgradeState(State):
                 ns.info.income -= req
                 ns.info.cpu_level += 1
             else:
-                return InformationDisplayState(ns, "Warning", "Not enough money to upgrade CPU!")
+                return MessageDisplayState(ns, "Warning", "Not enough money to upgrade CPU!")
         elif op.id is OperatorIds.UPGRADE_INTERNET_PLAN:
             req = Upgrade.upgrade_internet(ns.info.internet_level)
             if req < ns.info.income:
                 ns.info.income -= req
                 ns.info.internet_level += 1
             else:
-                return InformationDisplayState(ns, "Warning", "Not enough money to upgrade Internet!")
+                return MessageDisplayState(ns, "Warning", "Not enough money to upgrade Internet!")
         return ns
 
 
-class InformationDisplayState(State):
+class MessageDisplayState(State):
     def __init__(self, continue_to: 'State', title: str, info: str):
         self.continue_to = continue_to
         self.title = title
@@ -287,7 +287,7 @@ class InformationDisplayState(State):
 
 
 # If needed
-class GameEndState(InformationDisplayState):
+class GameEndState(MessageDisplayState):
     def __init__(self, title: str, info: str):
         super().__init__(None, title, info)
 
@@ -310,8 +310,8 @@ def copy_state(s: State) -> State:
         return ChallengeState(s)
     if isinstance(s, UpgradeState):
         return UpgradeState(s)
-    if isinstance(s, InformationDisplayState):
-        return InformationDisplayState(s.continue_to, s.title, s.info)
+    if isinstance(s, MessageDisplayState):
+        return MessageDisplayState(s.continue_to, s.title, s.info)
     if isinstance(s, GameEndState):
         return GameEndState(s.title, s.info)
     raise ValueError()
