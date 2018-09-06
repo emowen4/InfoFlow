@@ -20,14 +20,78 @@ PROBLEM_DESC = \
 
 # <COMMON_CODE>
 from enum import Enum
+from typing import List
+
+
+class Information:
+    def __init__(self, content: str):
+        self.content = content
+
+    def __str__(self):
+        return self.content
 
 
 class Challenge:
-    @staticmethod
-    def random() -> 'Challenge': pass
+    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5
+    reward_completion_multiplier = [.0, .3, .6, .9, 1.2, 1.5]  # 0%, 20%, 40%, 60%, 80%, 100% completion
+    score_correct_info = 100
+    score_incorrect_info = -200
+    score_correct_multiplier_level = 100
+    score_cancel_multiplier_level = -100
+    money_cancel_multiplier_level = -300
+
+    def __init__(self, level: int, reward: int, given_info: 'List[Information]', required_info: 'List[Information]'):
+        self.level = level
+        self.reward = reward
+        self.given_info = given_info
+        self.required_info = required_info
+        self.found_info = []
+
+    def add_info(self, info: Information):
+        if info not in self.found_info:
+            self.found_info.append(info)
+            return True
+        return False
+
+    def remove_info(self, info: Information):
+        if info in self.found_info:
+            self.found_info.remove(info)
+            return True
+        return False
+
+    def submit(self, p: 'PlayerInfo'):
+        correct = 0
+        for info in self.found_info:
+            if info in self.required_info:
+                p.score += Challenge.score_correct_info
+                correct += 1
+            else:
+                p.score += Challenge.score_incorrect_info
+        correct_level = correct / len(self.required_info)
+        if correct_level > .6:
+            p.score += self.level * Challenge.score_correct_multiplier_level
+            p.income += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
+            return True, correct_level
+        else:
+            return False, correct_level
+
+    def cancel(self, p: 'PlayerInfo'):
+        p.score += Challenge.score_cancel_multiplier_level * self.level
+        p.income -= Challenge.money_cancel_multiplier_level * self.level
+
+    def __contains__(self, item):
+        return item in self.required_info
+
+    def __str__(self):
+        return f"Level: {self.level}\tReward: {self.reward}\n" + "\n".join([f"\t{info}" for info in self.given_info])
 
     @staticmethod
-    def clone(c: 'Challenge') -> 'Challenge': pass
+    def random() -> 'Challenge':
+        pass
+
+    @staticmethod
+    def clone(c: 'Challenge') -> 'Challenge':
+        pass
 
 
 class PlayerInfo:
@@ -39,10 +103,24 @@ class PlayerInfo:
                  internet_level: bool = 0):
         self.score = score
         self.finished = finished
-        self.income = income
-        self.total_income = total_income
+        self._income = income
+        self._total_income = total_income
         self.cpu_level = cpu_level
         self.internet_level = internet_level
+
+    @property
+    def income(self):
+        return self._income
+
+    @income.setter
+    def income_setter(self, val):
+        self.income += val
+        if val > 0:
+            self._total_income += val
+
+    @property
+    def total_income(self):
+        return self._total_income
 
     def __str__(self):
         return (f"Player Stats:"
@@ -71,7 +149,7 @@ class State:
         else:
             self.info = PlayerInfo()
             self.challenge = None
-            self.round = 0
+            self.round = 1
 
     def has_challenge(self) -> bool:
         return self.challenge is not None
@@ -87,13 +165,14 @@ class State:
         return False
 
     def __eq__(self, s):
-        if self == s: return True
-        if s is None: return False
+        if self == s:
+            return True
+        if s is None:
+            return False
         return type(self) is type(s) and self.info == s.info and self.challenge == s.challenge and self.round == s.round
 
     def __str__(self):
-        return (f"Round {self.round}\n"
-                f"{self.info}")
+        return f"Round {self.round}\n{self.info}"
 
     def __hash(self):
         return hash(str(self))
@@ -167,6 +246,16 @@ class ChallengeState(State):
         return ns
 
 
+class Upgrade:
+    @staticmethod
+    def upgrade_cpu(current_level: int) -> int:
+        return current_level * 500
+
+    @staticmethod
+    def upgrade_internet(current_level: int) -> int:
+        return current_level * 500
+
+
 # Player can upgrade CPU and Internet plan
 class UpgradeState(State):
     def __init__(self, clone: 'UpgradeState' = None):
@@ -185,28 +274,53 @@ class UpgradeState(State):
             return self.finish_round(UpgradeState)
         ns = UpgradeState(self)
         if op.id is OperatorIds.UPGRADE_CPU:
-            # TODO consume money
-            ns.info.cpu_level += 1
+            req = Upgrade.upgrade_cpu(ns.info.cpu_level)
+            if req < ns.info.income:
+                ns.info.income -= req
+                ns.info.cpu_level += 1
+            else:
+                return InformationDisplayState(ns, "Warning", "Not enough money to upgrade CPU!")
         elif op.id is OperatorIds.UPGRADE_INTERNET_PLAN:
-            # TODO consume money
-            ns.info.internet_level += 1
+            req = Upgrade.upgrade_internet(ns.info.internet_level)
+            if req < ns.info.income:
+                ns.info.income -= req
+                ns.info.internet_level += 1
+            else:
+                return InformationDisplayState(ns, "Warning", "Not enough money to upgrade Internet!")
         return ns
 
 
-# If needed
-class GameEndState(State):
-    def __init__(self, clone: 'GameEndState' = None):
-        super().__init__(clone)
+class InformationDisplayState(State):
+    def __init__(self, continue_to: 'State', title: str, info: str):
+        self.continue_to = continue_to
+        self.title = title
+        self.info = info
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
 
     def apply_operator(self, op: 'Operator'):
-        return GameStartState()
+        return self.continue_to
+
+    def __str__(self):
+        return f"{self.title}: {self.info}"
+
+
+# If needed
+class GameEndState(InformationDisplayState):
+    def __init__(self, title: str, info: str):
+        super().__init__(None, title, info)
+
+    def is_applicable_operator(self, op: 'Operator'):
+        return False
+
+    def is_goal(self):
+        return True
 
 
 def goal_message(s: State) -> str:
-    return f"Congratulations! You makes the goal in {s.round}{'s' if s.round > 1 else ''}"
+    return (f"Congratulations! You makes the goal in {s.round}{'s' if s.round > 1 else ''} with a score of {s.info.score}."
+            f"You earned {s.info.total_income} in total and {s.info.income} left.")
 
 
 def copy_state(s: State) -> State:
@@ -218,6 +332,10 @@ def copy_state(s: State) -> State:
         return ChallengeState(s)
     if isinstance(s, UpgradeState):
         return UpgradeState(s)
+    if isinstance(s, InformationDisplayState):
+        return InformationDisplayState(s.continue_to, s.title, s.info)
+    if isinstance(s, GameEndState):
+        return GameEndState(s.title, s.info)
     raise ValueError()
 
 
@@ -248,7 +366,12 @@ class Operator:
         return s.apply_operator(self)
 
 
+Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
+
+
 def goal_test(s: 'State') -> bool: return s.is_goal()
+
+
 # </COMMON_CODE>
 
 # <COMMON_DATA>
@@ -259,7 +382,7 @@ INITIAL_STATE = GameStartState()
 # </INITIAL_STATE>
 
 # <OPERATORS>
-OPERATORS = [Operator(id.value, id) for id in list(OperatorIds)]
+OPERATORS = Operator.all_ops[:]
 # </OPERATORS>
 
 # <GOAL_TEST> (optional)
@@ -271,5 +394,4 @@ GOAL_MESSAGE_FUNCTION = goal_message
 # </GOAL_MESSAGE_FUNCTION>
 
 # <STATE_VIS>
-
 # </STATE_VIS>
