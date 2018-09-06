@@ -77,7 +77,7 @@ class Challenge:
 
     def cancel(self, p: 'PlayerInfo'):
         p.score += Challenge.score_cancel_multiplier_level * self.level
-        p.income -= Challenge.money_cancel_multiplier_level * self.level
+        p.income += Challenge.money_cancel_multiplier_level * self.level
 
     def __contains__(self, item):
         return item in self.required_info
