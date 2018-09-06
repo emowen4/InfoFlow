@@ -190,45 +190,25 @@ class GameStartState(State):
         '''<Here is the background>'''
     )
 
-    def __init__(self, clone: 'GameStartState' = None):
+    def __init__(self, clone: 'State' = None):
         super().__init__(clone)
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
 
     def apply_operator(self, op: 'Operator'):
-        return MainMenuState(self)
+        return ChallengeState(self)
 
     def __str__(self):
         return f"Background:\n{GameStartState.text_background}"
 
 
-class MainMenuState(State):
-    def __init__(self, clone: 'MainMenuState' = None):
-        super().__init__(clone)
-
-    def is_applicable_operator(self, op: 'Operator'):
-        return (op.id is OperatorIds.MENU_CHALLENGE
-                or op.id is OperatorIds.MENU_UPGRADE
-                or op.id is OperatorIds.MENU_FINISH_ROUND)
-
-    def apply_operator(self, op: 'Operator'):
-        if op.id is OperatorIds.MENU_CHALLENGE:
-            return ChallengeState(self)
-        elif op.id is OperatorIds.MENU_UPGRADE:
-            return UpgradeState(self)
-        elif op.id is OperatorIds.MENU_FINISH_ROUND:
-            return self.finish_round(MainMenuState)
-        else:
-            raise ValueError()
-
-
 class ChallengeState(State):
-    def __init__(self, clone: 'ChallengeState' = None):
+    def __init__(self, clone: 'State' = None):
         super().__init__(clone)
 
     def is_applicable_operator(self, op: 'Operator'):
-        return (op.id is OperatorIds.MENU_BACK
+        return (op.id is OperatorIds.MENU_UPGRADE
                 or (not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
                                                   or op.id is OperatorIds.CHALLENGE_DECINE))
                 or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_SEARCH
@@ -237,8 +217,8 @@ class ChallengeState(State):
                 or op.id is OperatorIds.MENU_FINISH_ROUND)
 
     def apply_operator(self, op: 'Operator'):
-        if op.id is OperatorIds.MENU_BACK:
-            return MainMenuState(self)
+        if op.id is OperatorIds.MENU_UPGRADE:
+            return UpgradeState(self)
         elif op.id is OperatorIds.MENU_FINISH_ROUND:
             return self.finish_round(ChallengeState)
         ns = ChallengeState(self)
@@ -258,18 +238,18 @@ class Upgrade:
 
 # Player can upgrade CPU and Internet plan
 class UpgradeState(State):
-    def __init__(self, clone: 'UpgradeState' = None):
+    def __init__(self, clone: 'State' = None):
         super().__init__(clone)
 
     def is_applicable_operator(self, op: 'Operator'):
-        return (op.id is OperatorIds.MENU_BACK
+        return (op.id is OperatorIds.MENU_CHALLENGE
                 or (not self.has_challenge() and (op.id is OperatorIds.UPGRADE_CPU
                                                   or op.id is OperatorIds.UPGRADE_INTERNET_PLAN))
                 or op.id is OperatorIds.MENU_FINISH_ROUND)
 
     def apply_operator(self, op: 'Operator'):
-        if op.id is OperatorIds.MENU_BACK:
-            return MainMenuState(self)
+        if op.id is OperatorIds.MENU_CHALLENGE:
+            return ChallengeState(self)
         elif op.id is OperatorIds.MENU_FINISH_ROUND:
             return self.finish_round(UpgradeState)
         ns = UpgradeState(self)
@@ -320,14 +300,12 @@ class GameEndState(InformationDisplayState):
 
 def goal_message(s: State) -> str:
     return (f"Congratulations! You makes the goal in {s.round}{'s' if s.round > 1 else ''} with a score of {s.info.score}."
-            f"You earned {s.info.total_income} in total and {s.info.income} left.")
+            f"You earned {s.info.total_income} in total and {s.info.income} is left.")
 
 
 def copy_state(s: State) -> State:
     if isinstance(s, GameStartState):
         return GameStartState(s)
-    if isinstance(s, MainMenuState):
-        return MainMenuState(s)
     if isinstance(s, ChallengeState):
         return ChallengeState(s)
     if isinstance(s, UpgradeState):
@@ -343,7 +321,6 @@ class OperatorIds(Enum):
     MENU_CONTINUE = "Continue..."
     MENU_CHALLENGE = "Move to challenge view"
     MENU_UPGRADE = "Move to upgrade view"
-    MENU_BACK = "Move to upper menu"
     MENU_FINISH_ROUND = "Finish this round"
     CHALLENGE_ACCEPT = "Accept the challenge"
     CHALLENGE_DECINE = "Decine the challenge"
