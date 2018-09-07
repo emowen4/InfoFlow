@@ -13,8 +13,13 @@ PROBLEM_VERSION = "0.1"
 PROBLEM_AUTHORS = ["Dylan Li", "Joey Pan", "Owen Wang", "Shirley Zhang"]
 PROBLEM_CREATION_DATE = "04-Sep-2018"
 PROBLEM_DESC = \
-    '''
-    Info Flow.
+    '''Welcome to Info Flow!
+    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. Lives became more convenience, but finding a job became more and more difficult. 
+At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your personal information is connected with the website (no matter public information or private things, they need all of your information). You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, and if you did well, they even pay you bonus for your work. 
+It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, that will definitely end even worse than be in a jail……
+You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school and work to earn money. But you are just a student who even did not finished college course, what could you do?
+There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, what will that be……?
+
     '''
 # </METADATA>
 
@@ -53,11 +58,11 @@ class Challenge:
     def submit(self, p: 'PlayerInfo'):
         raise NotImplementedError()
 
-    def __str__(self):
-        return self.name
-
     def energy_consume(self):
         return self.level * Challenge.energy_accept_multiplier_level
+
+    def __str__(self):
+        return self.name
 
 
 class SortChallenge(Challenge):
@@ -114,13 +119,13 @@ class SortChallenge(Challenge):
                 "\n".join([f"\t{'{0:3}'.format(ind)}: {info.content}" for ind, info in enumerate(self.to_sort)]))
 
     @staticmethod
+    def clone(c: 'SortChallenge') -> 'SortChallenge':
+        return SortChallenge(c.level, c.to_sort, c.categories, c.sorted)
+
+    @staticmethod
     def random() -> 'SortChallenge':
         # TODO
         pass
-
-    @staticmethod
-    def clone(c: 'SortChallenge') -> 'SortChallenge':
-        sc = SortChallenge(c.level, c.to_sort, c.categories, c.sorted)
 
 
 class PlayerInfo:
@@ -133,7 +138,7 @@ class PlayerInfo:
         self.score = score
         self.finished = finished
         self.money = money
-        self.debt = debt
+        self._debt = debt
         self._energy = energy
         self.current_challenge = current_challenge
 
@@ -143,11 +148,15 @@ class PlayerInfo:
 
     @energy.setter
     def energy(self, val):
-        self._energy = val
-        if self._energy < 0:
-            self._energy = 0
-        if self._energy > 100:
-            self._energy = 100
+        self._energy = 0 if val < 0 else 100 if val > 100 else val
+
+    @property
+    def debt(self):
+        return self._debt
+
+    @debt.setter
+    def debt(self, val):
+        self._debt = 0 if val < 0 else val
 
     def has_accepted_challenge(self):
         return self.current_challenge is not None
@@ -193,13 +202,39 @@ class State:
         return op.id is OperatorIds.FINISH_ROUND or op.id is OperatorIds.PAY_DEBT
 
     def apply_operator(self, op: 'Operator') -> 'State':
+        ns = copy_state(self)
         if op.id is OperatorIds.FINISH_ROUND:
-            ns = copy_state(self)
             ns.round += 1
-            ns.player.energy
+            ns.player.energy += 80  # Recover 80% of total energy after each round
+            ns.player.debt = int(ns.player.debt * 1.05)  # Add 5% debt according to the remaining debt after each round
+        elif op.id is OperatorIds.PAY_DEBT:
+            if ns.player.money > 0:
+                to_pay = min(ns.player.debt, ns.player.money)
+                ns.player.debt -= to_pay
+                ns.player.money -= to_pay
+                return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid for your debt.")
+            else:
+                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay for your debt!")
+        return ns.check_win_lose_state()
+
+    def check_win_lose_state(self):
+        if self.is_goal():
+            return GameEndState(self.player, "Congratulations!", self.goal_message())
+        elif self.round >= 30 and not self.is_goal():
+            return GameEndState(self.player, "You Lose!", self.lose_message())
+        else:
+            return self
 
     def is_goal(self) -> bool:
-        return False
+        return self.player.debt is 0
+
+    def goal_message(self) -> str:
+        return (f"You makes the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
+                f"You payed all the debt and there is {self.player.money} left.")
+
+    def lose_message(self) -> str:
+        return (f"You didn't make the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
+                f"You have {self.player.money} and {self.player.debt} is needed to pay.")
 
     def __eq__(self, s):
         if self == s:
@@ -209,7 +244,7 @@ class State:
         return type(self) is type(s) and self.player == s.info and self.challenge == s.challenge and self.round == s.round
 
     def __str__(self):
-        return f"Round {self.round}\n{self.info}"
+        return f"Round {self.round}\n{self.player}"
 
     def __hash(self):
         return hash(str(self))
@@ -227,8 +262,8 @@ class GameStartState(State):
         '''<Here is the background>'''
     )
 
-    def __init__(self, clone: 'State' = None):
-        super().__init__(clone)
+    def __init__(self):
+        super().__init__()
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -245,18 +280,20 @@ class ChallengeState(State):
         super().__init__(clone)
 
     def is_applicable_operator(self, op: 'Operator'):
-        return ((not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
-                                               or op.id is OperatorIds.CHALLENGE_DECINE))
-                or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_CANCEL)))
+        return (super().is_applicable_operator(op)
+                or (not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT or op.id is OperatorIds.CHALLENGE_DECINE)))
 
     def apply_operator(self, op: 'Operator'):
+        if super().is_applicable_operator(op):
+            return super().apply_operator(op)
         ns = ChallengeState(self)
         # TODO challenge related
-        return ns
+        return ns.check_win_lose_state()
 
 
 class MessageDisplayState(State):
     def __init__(self, continue_to: 'State', title: str, info: str):
+        super().__init__(continue_to)
         self.continue_to = continue_to
         self.title = title
         self.info = info
@@ -268,13 +305,14 @@ class MessageDisplayState(State):
         return self.continue_to
 
     def __str__(self):
-        return f"{self.title}: {self.info}"
+        return f"{self.title}\n{self.info}"
 
 
 # If needed
 class GameEndState(MessageDisplayState):
-    def __init__(self, title: str, info: str):
+    def __init__(self, player: 'PlayerInfo', title: str, info: str):
         super().__init__(None, title, info)
+        self.player = player
 
     def is_applicable_operator(self, op: 'Operator'):
         return False
@@ -284,13 +322,12 @@ class GameEndState(MessageDisplayState):
 
 
 def goal_message(s: State) -> str:
-    return (f"Congratulations! You makes the goal in {s.round}{'s' if s.round > 1 else ''} with a score of {s.info.score}."
-            f"You earned {s.info.total_money} in total and {s.info.money} is left.")
+    return s.goal_message()
 
 
 def copy_state(s: State) -> State:
     if isinstance(s, GameStartState):
-        return GameStartState(s)
+        return GameStartState()
     if isinstance(s, ChallengeState):
         return ChallengeState(s)
     if isinstance(s, MessageDisplayState):
