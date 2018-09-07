@@ -331,7 +331,7 @@ class GameEndState(MessageDisplayState):
 
 class NewsInformation:
     all_categories = ("Business", "Music & Arts", "Health & Medicine", "Nature & Environments", "Politics",
-                      "Religions", "Science", "School", "Sports", "Technology", "Video Games", "Weather")
+                      "Religion", "Science", "School", "Sports", "Technology", "Video Games", "Weather")
 
     def __init__(self, category: str, content: str):
         self.category = category
@@ -501,6 +501,7 @@ class NewsSortingChallengeState(ChallengeState):
             return ns
         else:
             ns = ChallengeMenuState(self)
+            ns.player.current_challenge.sort_to(self.player.current_challenge.to_sort[self.news_index], op.id)
             passed, corr = ns.player.current_challenge.submit(ns.player)
             if passed:
                 return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
@@ -509,7 +510,7 @@ class NewsSortingChallengeState(ChallengeState):
 
     def __str__(self):
         return (f"{super().__str__()}\nNews: {self.player.current_challenge.to_sort[self.news_index]}"
-                f"\tNews sorted: {self.news_index}/{len(self.player.current_challenge.to_sort)}\nWhich category should this news belong to?")
+                f"\t(News sorted: {self.news_index}/{len(self.player.current_challenge.to_sort)})\nWhich category should this news belong to?")
 
 
 class Challenges:
