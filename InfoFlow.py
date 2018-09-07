@@ -244,7 +244,8 @@ what will wait for you in the future?'''
 class ChallengeMenuState(State):
     def __init__(self, old: 'State' = None):
         super().__init__(old)
-        self.random_challenge = old.random_challenge.clone() if isinstance(old, ChallengeMenuState) else self.__random_challenge()
+        self.random_challenge = list(old.random_challenge if isinstance(old, ChallengeMenuState) else self.__random_challenge())
+        self.random_challenge[0] = self.random_challenge[0].clone()
 
     def __random_challenge(self):
         c, s = choice(Challenges.all)
@@ -264,7 +265,7 @@ class ChallengeMenuState(State):
             return ns.check_win_lose_state()
         elif op.id is OperatorIds.CHALLENGE_DECINE:
             ns = ChallengeMenuState(old=self)
-            ns.random_challenge[0].decline()
+            ns.random_challenge[0].decline(ns.player)
             ns.random_challenge = ns.__random_challenge()
             return ns.check_win_lose_state()
 
