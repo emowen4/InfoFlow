@@ -35,54 +35,6 @@ from random import choice
 from typing import List, Dict
 
 
-class Information:
-    def __init__(self, content: str):
-        self.content = content
-
-    def __str__(self):
-        return self.content
-
-
-class Challenge:
-    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5
-    reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
-    score_correct_multiplier_level = 100
-    score_cancel_multiplier_level = -100
-    money_cancel_multiplier_level = -300
-    energy_accept_multiplier_level = 5
-
-    def __init__(self, name: str, level: int):
-        self.name = name
-        self.level = level
-
-    def accept(self, p: 'PlayerInfo') -> None:
-        p.energy -= self.energy_consume()
-
-    def decline(self, p: 'PlayerInfo') -> None:
-        p.money -= 100
-        p.difficulty_level -= 1
-
-    def cancel(self, p: 'PlayerInfo') -> None:
-        p.score += Challenge.score_cancel_multiplier_level * self.level
-        p.money += Challenge.money_cancel_multiplier_level * self.level
-
-    def submit(self, p: 'PlayerInfo') -> None:
-        raise NotImplementedError()
-
-    def set_finished(self, p: 'PlayerInfo'):
-        p.finished += 1
-        p.difficulty_level += 1
-
-    def energy_consume(self):
-        return self.level * Challenge.energy_accept_multiplier_level
-
-    def preview(self) -> str:
-        return f"{self.name}(Level: {self.level + 1})"
-
-    def __str__(self):
-        return self.preview()
-
-
 class PlayerInfo:
     def __init__(self, difficulty_level: int = 0,
                  score: int = 0,
@@ -143,6 +95,46 @@ class PlayerInfo:
     @staticmethod
     def clone(info: 'PlayerInfo'):
         return PlayerInfo(info.difficulty_level, info.score, info.finished, info.money, info.debt, info.energy, info.current_challenge)
+
+
+class Challenge:
+    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5
+    reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
+    score_correct_multiplier_level = 100
+    score_cancel_multiplier_level = -100
+    money_cancel_multiplier_level = -300
+    energy_accept_multiplier_level = 5
+
+    def __init__(self, name: str, level: int):
+        self.name = name
+        self.level = level
+
+    def accept(self, p: 'PlayerInfo') -> None:
+        p.energy -= self.energy_consume()
+
+    def decline(self, p: 'PlayerInfo') -> None:
+        p.money -= 100
+        p.difficulty_level -= 1
+
+    def cancel(self, p: 'PlayerInfo') -> None:
+        p.score += Challenge.score_cancel_multiplier_level * self.level
+        p.money += Challenge.money_cancel_multiplier_level * self.level
+
+    def submit(self, p: 'PlayerInfo') -> None:
+        raise NotImplementedError()
+
+    def set_finished(self, p: 'PlayerInfo'):
+        p.finished += 1
+        p.difficulty_level += 1
+
+    def energy_consume(self):
+        return self.level * Challenge.energy_accept_multiplier_level
+
+    def preview(self) -> str:
+        return f"{self.name}(Level: {self.level + 1})"
+
+    def __str__(self):
+        return self.preview()
 
 
 class State:
