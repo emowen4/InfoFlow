@@ -153,7 +153,7 @@ class Challenge:
         p.difficulty_level += 1
 
     def energy_consume(self):
-        return self.level * Challenge.energy_accept_multiplier_level
+        return (self.level + 2) * Challenge.energy_accept_multiplier_level
 
     def preview(self) -> str:
         return f"{self.name}(Level: {self.level + 1})"
@@ -395,6 +395,7 @@ class NewsSortingChallenge(Challenge):
                           "Birds Retreating from Climate Change, Deforestation in Honduras Cloud Forests",
                           "When It Rains, Snake Bites Soar",
                           "New Source of Formic Acid Discovered Over Pacific, Indian Oceans",
+                          "A massive net is being deployed to pick up plastic in the Pacific",
                           "'Live Fast, Die Young' Lifestyle Reflected in Birds' Feathers"]],
         *[NewsInformation("Politics", content)
           for content in ["George Papadopoulos gets 14 days in prison",
@@ -426,7 +427,6 @@ class NewsSortingChallenge(Challenge):
                           "‘Accessory to War’ probes the uneasy alliance between space science and the military",
                           "A new material harnesses light to deice surfaces",
                           "Electrons surf protons’ waves in a new kind of particle accelerator",
-                          "A massive net is being deployed to pick up plastic in the Pacific",
                           "Newfound skull tunnels may speed immune cells’ trek to brain injuries",
                           "An elusive Higgs boson decay has finally been spotted"]]
     ]
