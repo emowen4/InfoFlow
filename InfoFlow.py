@@ -20,7 +20,7 @@ PROBLEM_DESC = \
 
 # <COMMON_CODE>
 from enum import Enum
-from typing import List
+from typing import List, Dict
 
 
 class Information:
@@ -37,84 +37,93 @@ class Challenge:
     score_correct_multiplier_level = 100
     score_cancel_multiplier_level = -100
     money_cancel_multiplier_level = -300
+    energy_accept_multiplier_level = 5
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, level: int):
         self.name = name
+        self.level = level
 
-    def accept(self, p: 'PlayerInfo') -> 'State':
-        raise NotImplementedError()
+    def accept(self, p: 'PlayerInfo'):
+        p.energy -= self.energy_consume()
 
-    def cancel(self, p: 'PlayerInfo') -> 'State':
-        raise NotImplementedError()
+    def cancel(self, p: 'PlayerInfo'):
+        p.score += Challenge.score_cancel_multiplier_level * self.level
+        p.money += Challenge.money_cancel_multiplier_level * self.level
 
-    def submit(self, p: 'PlayerInfo') -> 'State':
+    def submit(self, p: 'PlayerInfo'):
         raise NotImplementedError()
 
     def __str__(self):
         return self.name
 
+    def energy_consume(self):
+        return self.level * Challenge.energy_accept_multiplier_level
 
-class SortChallenge2(Challenge):
-    score_correct_info = 100
-    score_incorrect_info = -200
 
-    def __init__(self, level: int, reward: int, given_info: 'List[Information]', required_info: 'List[Information]'):
-        super().__init__("Sort Challenge")
+class SortChallenge(Challenge):
+    class SortInformation:
+        def __init__(self, content: str, category: str):
+            self.content = content
+            self.category = category
+
+        def __eq__(self, other):
+            if other is None:
+                return False
+            return isinstance(other, type(self)) and self.category == other.category and self.content == other.content
+
+        def __str__(self):
+            return self.content
+
+    score_correct_info = 10
+    score_incorrect_info = -20
+
+    def __init__(self, level: int, to_sort: List[SortInformation], categories: List[str] = None, sorted: Dict[str, List[SortInformation]] = None):
+        super().__init__("News Sort Challenge", level)
         self.level = level
-        self.reward = reward
-        self.given_info = given_info
-        self.required_info = required_info
-        self.found_info = []
+        self.to_sort = to_sort
+        self.categories = categories if categories else list(set([info.category for info in to_sort]))
+        self.sorted = sorted if sorted else {}
 
-    def add_info(self, info: Information):
-        if info not in self.found_info:
-            self.found_info.append(info)
-            return True
-        return False
+    def sort_to(self, info: 'SortInformation', category: 'str'):
+        self.sorted.setdefault(category, [])
+        self.sorted[category].append(info)
 
-    def remove_info(self, info: Information):
-        if info in self.found_info:
-            self.found_info.remove(info)
-            return True
-        return False
+    def remove_from(self, info: 'SortInformation', category: 'str'):
+        if category in self.to_sort and info in self.to_sort[category]:
+            self.to_sort[category].remove(info)
 
     def submit(self, p: 'PlayerInfo'):
         correct = 0
-        for info in self.found_info:
-            if info in self.required_info:
-                p.score += Challenge.score_correct_info
-                correct += 1
-            else:
-                p.score += Challenge.score_incorrect_info
-        correct_level = correct / len(self.required_info)
-        if correct_level > .6:
+        for cat, infos in self.sorted:
+            for info in infos:
+                if info.category == cat:
+                    p.score += SortChallenge.score_correct_info
+                    correct += 1
+                else:
+                    p.score += SortChallenge.score_incorrect_info
+        correct_level = correct / len(self.to_sort)
+        if correct_level >= .8:  # Require at least 80% of the information are sorted correctly to get success in this challenge
             p.score += self.level * Challenge.score_correct_multiplier_level
             p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
             return True, correct_level
         else:
             return False, correct_level
 
-    def cancel(self, p: 'PlayerInfo'):
-        p.score += Challenge.score_cancel_multiplier_level * self.level
-        p.money += Challenge.money_cancel_multiplier_level * self.level
-
-    def __contains__(self, item):
-        return item in self.required_info
-
     def __str__(self):
-        return f"Level: {self.level}\tReward: {self.reward}\n" + "\n".join([f"\t{info}" for info in self.given_info])
+        return (f"{super().__str__()}\tLevel: {self.level}\n"
+                "\n".join([f"\t{'{0:3}'.format(ind)}: {info.content}" for ind, info in enumerate(self.to_sort)]))
 
     @staticmethod
-    def random() -> 'SortChallenge2':
+    def random() -> 'SortChallenge':
+        # TODO
         pass
 
     @staticmethod
-    def clone(c: 'SortChallenge2') -> 'SortChallenge2':
-        pass
+    def clone(c: 'SortChallenge') -> 'SortChallenge':
+        sc = SortChallenge(c.level, c.to_sort, c.categories, c.sorted)
 
 
 class PlayerInfo:
-
     def __init__(self, score: int = 0,
                  finished: int = 0,
                  money: int = 0,
@@ -148,7 +157,7 @@ class PlayerInfo:
         energy_blocks = block_full * (self.energy // 20)
         energy_rest = self.energy % 20
         energy_rest = block_three_forth if energy_rest >= 15 else block_half if energy_rest >= 10 else block_one_fourth if energy_rest >= 5 else ''
-        energy_spaces = block_empty * (max(0, 5 - len(energy_blocks) - len(energy_rest)))
+        energy_spaces = block_empty * max(0, 5 - len(energy_blocks) - len(energy_rest))
         return (f"Player Stats:"
                 f"\tEnergy: {'{0:3}'.format(self.energy)}▕{energy_blocks}{energy_rest}{energy_spaces}▏"
                 f"\tScore: {self.score}"
@@ -169,11 +178,11 @@ class PlayerInfo:
 class State:
     def __init__(self, clone: 'State' = None):
         if clone:
-            self.info = PlayerInfo.clone(clone.info)
-            self.challenge = SortChallenge2.clone(clone.challenge) if clone.challenge else None
+            self.player = PlayerInfo.clone(clone.player)
+            self.challenge = SortChallenge.clone(clone.challenge) if clone.challenge else None
             self.round = clone.round
         else:
-            self.info = PlayerInfo()
+            self.player = PlayerInfo()
             self.challenge = None
             self.round = 1
 
@@ -181,10 +190,13 @@ class State:
         return self.challenge is not None
 
     def is_applicable_operator(self, op: 'Operator') -> bool:
-        raise NotImplementedError()
+        return op.id is OperatorIds.FINISH_ROUND or op.id is OperatorIds.PAY_DEBT
 
     def apply_operator(self, op: 'Operator') -> 'State':
-        raise NotImplementedError()
+        if op.id is OperatorIds.FINISH_ROUND:
+            ns = copy_state(self)
+            ns.round += 1
+            ns.player.energy
 
     def is_goal(self) -> bool:
         return False
@@ -194,7 +206,7 @@ class State:
             return True
         if s is None:
             return False
-        return type(self) is type(s) and self.info == s.info and self.challenge == s.challenge and self.round == s.round
+        return type(self) is type(s) and self.player == s.info and self.challenge == s.challenge and self.round == s.round
 
     def __str__(self):
         return f"Round {self.round}\n{self.info}"
@@ -234,7 +246,7 @@ class ChallengeState(State):
 
     def is_applicable_operator(self, op: 'Operator'):
         return ((not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
-                                                  or op.id is OperatorIds.CHALLENGE_DECINE))
+                                               or op.id is OperatorIds.CHALLENGE_DECINE))
                 or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_CANCEL)))
 
     def apply_operator(self, op: 'Operator'):
@@ -293,7 +305,8 @@ class OperatorIds(Enum):
     CHALLENGE_ACCEPT = "Accept the challenge"
     CHALLENGE_DECINE = "Decine the challenge"
     CHALLENGE_CANCEL = "Cancel the accepted challenge"
-    PAY_DEBT = ""
+    PAY_DEBT = "Pay for the debt"
+    FINISH_ROUND = "End round"
 
 
 class Operator:
