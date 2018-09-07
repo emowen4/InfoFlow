@@ -258,7 +258,7 @@ class ChallengeMenuState(State):
         self.random_challenge[0] = self.random_challenge[0].clone()
 
     def __random_challenge(self):
-        c, s = choice(Challenges.all)
+        c, s, _ = choice(Challenges.all)
         return c(self.player.difficulty_level), s
 
     def is_applicable_operator(self, op: 'Operator'):
