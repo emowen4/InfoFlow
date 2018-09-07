@@ -233,8 +233,7 @@ class ChallengeState(State):
         super().__init__(clone)
 
     def is_applicable_operator(self, op: 'Operator'):
-        return (op.id is OperatorIds.MENU_UPGRADE
-                or (not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
+        return ((not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
                                                   or op.id is OperatorIds.CHALLENGE_DECINE))
                 or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_CANCEL)))
 
