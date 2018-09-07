@@ -323,7 +323,10 @@ class GameEndState(MessageDisplayState):
         self.player = player
 
     def is_applicable_operator(self, op: 'Operator'):
-        return False
+        return op.id is OperatorIds.MENU_CONTINUE
+
+    def apply_operator(self, op: 'Operator'):
+        return ChallengeMenuState(self)
 
     def is_goal(self):
         return True
