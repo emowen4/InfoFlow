@@ -14,13 +14,19 @@ PROBLEM_AUTHORS = ["Dylan Li", "Joey Pan", "Owen Wang", "Shirley Zhang"]
 PROBLEM_CREATION_DATE = "04-Sep-2018"
 PROBLEM_DESC = \
     '''Welcome to Info Flow!
-    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. Lives became more convenience, but finding a job became more and more difficult. 
-At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your personal information is connected with the website (no matter public information or private things, they need all of your information). You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, and if you did well, they even pay you bonus for your work. 
-It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, that will definitely end even worse than be in a jail……
-You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school and work to earn money. But you are just a student who even did not finished college course, what could you do?
-There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, what will that be……?
-
-    '''
+    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. 
+Lives became more convenience, but finding a job became more and more difficult. 
+    At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your 
+personal information is connected with the website (no matter public information or private things, they need all of your information). 
+You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, 
+and if you did well, they even pay you bonus for your work. 
+    It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, 
+that will definitely end even worse than be in a jail……
+    You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that 
+your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school 
+and work to earn money. But you are just a student who even did not finished college course, what could you do?
+    There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, 
+what will wait for you in the future?'''
 # </METADATA>
 
 # <COMMON_CODE>
@@ -65,8 +71,22 @@ class Challenge:
         return self.name
 
 
-class SortChallenge(Challenge):
-    class SortInformation:
+class NewsSortChallenge(Challenge):
+    class NewsInformation:
+        # News Categories:
+        # Business
+        # Entertainment & Arts
+        # Health & Medicine
+        # Nature & Environments
+        # Politics
+        # Religions
+        # Science
+        # Schools
+        # Sports
+        # Technology
+        # Video Games
+        # Weather
+
         def __init__(self, content: str, category: str):
             self.content = content
             self.category = category
@@ -82,18 +102,18 @@ class SortChallenge(Challenge):
     score_correct_info = 10
     score_incorrect_info = -20
 
-    def __init__(self, level: int, to_sort: List[SortInformation], categories: List[str] = None, sorted: Dict[str, List[SortInformation]] = None):
+    def __init__(self, level: int, to_sort: List[NewsInformation], categories: List[str] = None, sorted: Dict[str, List[NewsInformation]] = None):
         super().__init__("News Sort Challenge", level)
         self.level = level
         self.to_sort = to_sort
         self.categories = categories if categories else list(set([info.category for info in to_sort]))
         self.sorted = sorted if sorted else {}
 
-    def sort_to(self, info: 'SortInformation', category: 'str'):
+    def sort_to(self, info: 'NewsInformation', category: 'str'):
         self.sorted.setdefault(category, [])
         self.sorted[category].append(info)
 
-    def remove_from(self, info: 'SortInformation', category: 'str'):
+    def remove_from(self, info: 'NewsInformation', category: 'str'):
         if category in self.to_sort and info in self.to_sort[category]:
             self.to_sort[category].remove(info)
 
@@ -102,10 +122,10 @@ class SortChallenge(Challenge):
         for cat, infos in self.sorted:
             for info in infos:
                 if info.category == cat:
-                    p.score += SortChallenge.score_correct_info
+                    p.score += NewsSortChallenge.score_correct_info
                     correct += 1
                 else:
-                    p.score += SortChallenge.score_incorrect_info
+                    p.score += NewsSortChallenge.score_incorrect_info
         correct_level = correct / len(self.to_sort)
         if correct_level >= .8:  # Require at least 80% of the information are sorted correctly to get success in this challenge
             p.score += self.level * Challenge.score_correct_multiplier_level
@@ -119,11 +139,11 @@ class SortChallenge(Challenge):
                 "\n".join([f"\t{'{0:3}'.format(ind)}: {info.content}" for ind, info in enumerate(self.to_sort)]))
 
     @staticmethod
-    def clone(c: 'SortChallenge') -> 'SortChallenge':
-        return SortChallenge(c.level, c.to_sort, c.categories, c.sorted)
+    def clone(c: 'NewsSortChallenge') -> 'NewsSortChallenge':
+        return NewsSortChallenge(c.level, c.to_sort, c.categories, c.sorted)
 
     @staticmethod
-    def random() -> 'SortChallenge':
+    def random() -> 'NewsSortChallenge':
         # TODO
         pass
 
@@ -171,7 +191,7 @@ class PlayerInfo:
                 f"\tEnergy: {'{0:3}'.format(self.energy)}▕{energy_blocks}{energy_rest}{energy_spaces}▏"
                 f"\tScore: {self.score}"
                 f"\tFinished Challenges: {self.finished}"
-                f"\tMoney/Debt: {self.money}/{self.debt}"
+                f"\tMoney/Debt: ${self.money}/${self.debt}"
                 f"\t Has accepted challenge: {'✔' if self.has_accepted_challenge() else '×'}")
 
     @staticmethod
@@ -188,7 +208,7 @@ class State:
     def __init__(self, clone: 'State' = None):
         if clone:
             self.player = PlayerInfo.clone(clone.player)
-            self.challenge = SortChallenge.clone(clone.challenge) if clone.challenge else None
+            self.challenge = NewsSortChallenge.clone(clone.challenge) if clone.challenge else None
             self.round = clone.round
         else:
             self.player = PlayerInfo()
@@ -259,7 +279,20 @@ class State:
 # Tell the background of the game, introduce the game mechanics, and declare the goal
 class GameStartState(State):
     text_background = (
-        '''<Here is the background>'''
+        '''Welcome to Info Flow!
+    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. 
+Lives became more convenience, but finding a job became more and more difficult. 
+    At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your 
+personal information is connected with the website (no matter public information or private things, they need all of your information). 
+You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, 
+and if you did well, they even pay you bonus for your work. 
+    It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, 
+that will definitely end even worse than be in a jail……
+    You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that 
+your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school 
+and work to earn money. But you are just a student who even did not finished college course, what could you do?
+    There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, 
+what will wait for you in the future?'''
     )
 
     def __init__(self):
@@ -333,7 +366,7 @@ def copy_state(s: State) -> State:
     if isinstance(s, MessageDisplayState):
         return MessageDisplayState(s.continue_to, s.title, s.info)
     if isinstance(s, GameEndState):
-        return GameEndState(s.title, s.info)
+        return GameEndState(s.player, s.title, s.info)
     raise ValueError()
 
 
