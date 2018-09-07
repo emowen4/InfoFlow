@@ -14,19 +14,19 @@ PROBLEM_AUTHORS = ["Dylan Li", "Joey Pan", "Owen Wang", "Shirley Zhang"]
 PROBLEM_CREATION_DATE = "04-Sep-2018"
 PROBLEM_DESC = \
     '''Welcome to Info Flow!
-    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. 
-Lives became more convenience, but finding a job became more and more difficult. 
-    At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your 
-personal information is connected with the website (no matter public information or private things, they need all of your information). 
-You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, 
-and if you did well, they even pay you bonus for your work. 
-    It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, 
-that will definitely end even worse than be in a jail……
-    You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that 
-your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school 
-and work to earn money. But you are just a student who even did not finished college course, what could you do?
-    There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, 
-what will wait for you in the future?'''
+    In the year 2025 when technology is highly developed, types of jobs that were completed by people are now replaced 
+    by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
+    A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
+    complicated information using human power. However, once you choose this platform, all your personal information, 
+    including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
+    Some of those challenges are complicated, ranging from physical work to careful thinking.
+    ------
+    You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
+    your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
+    You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
+    you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
+    to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?
+'''
 # </METADATA>
 
 # <COMMON_CODE>
@@ -221,19 +221,18 @@ class State:
 class GameStartState(State):
     text_background = (
         '''Welcome to Info Flow!
-    2025, this is a technology highly developed time, many types of work that used completed by human is now replaced by AI machine working. 
-Lives became more convenience, but finding a job became more and more difficult. 
-    At this time, a mysteric website appeared: they offer huge amounts of cash for employees, but once you chose this website all your 
-personal information is connected with the website (no matter public information or private things, they need all of your information). 
-You need to complete tasks for them in order to pay the debt. These tasks are complicated and covered from online to physical activities, 
-and if you did well, they even pay you bonus for your work. 
-    It sounds good to work for this website right? But here is one thing you should know, if you cannot finish the final goal to pay the debt, 
-that will definitely end even worse than be in a jail……
-    You are just a normal student in college. One day there was a group of people suddenly broke into your house and saying that 
-your father owe them huge amount of money-- Your father gambled and lost all property in your family. You have to leave the school 
-and work to earn money. But you are just a student who even did not finished college course, what could you do?
-    There is no way to earn money except for that website, and today is you will be facing the first challenge from that website, 
-what will wait for you in the future?'''
+    In the year 2025 when technology is highly developed, types of jobs that were completed by people are now
+replaced by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
+A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
+complicated information using human power. However, once you choose this platform, all your personal information, 
+including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
+Some of those challenges are complicated, ranging from physical work to careful thinking.
+------------------------------------------------------------------------------------------------------------------------
+    You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
+your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
+You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
+you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
+to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
     )
 
     def __init__(self):
