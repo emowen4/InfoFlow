@@ -33,14 +33,33 @@ class Information:
 
 class Challenge:
     challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5
-    reward_completion_multiplier = [.0, .3, .6, .9, 1.2, 1.5]  # 0%, 20%, 40%, 60%, 80%, 100% completion
-    score_correct_info = 100
-    score_incorrect_info = -200
+    reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
     score_correct_multiplier_level = 100
     score_cancel_multiplier_level = -100
     money_cancel_multiplier_level = -300
 
+    def __init__(self, name: str):
+        self.name = name
+
+    def accept(self, p: 'PlayerInfo') -> 'State':
+        raise NotImplementedError()
+
+    def cancel(self, p: 'PlayerInfo') -> 'State':
+        raise NotImplementedError()
+
+    def submit(self, p: 'PlayerInfo') -> 'State':
+        raise NotImplementedError()
+
+    def __str__(self):
+        return self.name
+
+
+class SortChallenge2(Challenge):
+    score_correct_info = 100
+    score_incorrect_info = -200
+
     def __init__(self, level: int, reward: int, given_info: 'List[Information]', required_info: 'List[Information]'):
+        super().__init__("Sort Challenge")
         self.level = level
         self.reward = reward
         self.given_info = given_info
@@ -70,14 +89,14 @@ class Challenge:
         correct_level = correct / len(self.required_info)
         if correct_level > .6:
             p.score += self.level * Challenge.score_correct_multiplier_level
-            p.income += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
+            p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
             return True, correct_level
         else:
             return False, correct_level
 
     def cancel(self, p: 'PlayerInfo'):
         p.score += Challenge.score_cancel_multiplier_level * self.level
-        p.income += Challenge.money_cancel_multiplier_level * self.level
+        p.money += Challenge.money_cancel_multiplier_level * self.level
 
     def __contains__(self, item):
         return item in self.required_info
@@ -86,65 +105,72 @@ class Challenge:
         return f"Level: {self.level}\tReward: {self.reward}\n" + "\n".join([f"\t{info}" for info in self.given_info])
 
     @staticmethod
-    def random() -> 'Challenge':
+    def random() -> 'SortChallenge2':
         pass
 
     @staticmethod
-    def clone(c: 'Challenge') -> 'Challenge':
+    def clone(c: 'SortChallenge2') -> 'SortChallenge2':
         pass
 
 
 class PlayerInfo:
+
     def __init__(self, score: int = 0,
                  finished: int = 0,
-                 income: int = 0,
-                 total_income: int = 0,
-                 cpu_level: bool = 0,
-                 internet_level: bool = 0):
+                 money: int = 0,
+                 debt: int = 10000,
+                 energy: int = 100,
+                 current_challenge: 'Challenge' = None):
         self.score = score
         self.finished = finished
-        self._income = income
-        self._total_income = total_income
-        self.cpu_level = cpu_level
-        self.internet_level = internet_level
+        self.money = money
+        self.debt = debt
+        self._energy = energy
+        self.current_challenge = current_challenge
 
     @property
-    def income(self):
-        return self._income
+    def energy(self):
+        return self._energy
 
-    @income.setter
-    def income_setter(self, val):
-        self.income += val
-        if val > 0:
-            self._total_income += val
+    @energy.setter
+    def energy(self, val):
+        self._energy = val
+        if self._energy < 0:
+            self._energy = 0
+        if self._energy > 100:
+            self._energy = 100
 
-    @property
-    def total_income(self):
-        return self._total_income
+    def has_accepted_challenge(self):
+        return self.current_challenge is not None
 
     def __str__(self):
+        block_full, block_three_forth, block_half, block_one_fourth, block_empty = '█', '▊', '▌', '▎', '　'
+        energy_blocks = block_full * (self.energy // 20)
+        energy_rest = self.energy % 20
+        energy_rest = block_three_forth if energy_rest >= 15 else block_half if energy_rest >= 10 else block_one_fourth if energy_rest >= 5 else ''
+        energy_spaces = block_empty * (max(0, 5 - len(energy_blocks) - len(energy_rest)))
         return (f"Player Stats:"
+                f"\tEnergy: {'{0:3}'.format(self.energy)}▕{energy_blocks}{energy_rest}{energy_spaces}▏"
                 f"\tScore: {self.score}"
                 f"\tFinished Challenges: {self.finished}"
-                f"\tIncome/Total: {self.income}/{self.total_income}"
-                f"\tCPU Level: {self.cpu_level}"
-                f"\tInternet Level: {self.internet_level}")
+                f"\tMoney/Debt: {self.money}/{self.debt}"
+                f"\t Has accepted challenge: {'✔' if self.has_accepted_challenge() else '×'}")
 
     @staticmethod
     def clone(info: 'PlayerInfo'):
         return PlayerInfo(info.score,
                           info.finished,
-                          info.income,
-                          info.total_income,
-                          info.cpu_level,
-                          info.internet_level)
+                          info.money,
+                          info.debt,
+                          info.energy,
+                          info.current_challenge)
 
 
 class State:
     def __init__(self, clone: 'State' = None):
         if clone:
             self.info = PlayerInfo.clone(clone.info)
-            self.challenge = Challenge.clone(clone.challenge) if clone.challenge else None
+            self.challenge = SortChallenge2.clone(clone.challenge) if clone.challenge else None
             self.round = clone.round
         else:
             self.info = PlayerInfo()
@@ -161,7 +187,6 @@ class State:
         raise NotImplementedError()
 
     def is_goal(self) -> bool:
-        # TODO goal
         return False
 
     def __eq__(self, s):
@@ -211,62 +236,11 @@ class ChallengeState(State):
         return (op.id is OperatorIds.MENU_UPGRADE
                 or (not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT
                                                   or op.id is OperatorIds.CHALLENGE_DECINE))
-                or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_SEARCH
-                                              or op.id is OperatorIds.CHALLENGE_ANALYZE
-                                              or op.id is OperatorIds.CHALLENGE_SUBMIT))
-                or op.id is OperatorIds.MENU_FINISH_ROUND)
+                or (self.has_challenge() and (op.id is OperatorIds.CHALLENGE_CANCEL)))
 
     def apply_operator(self, op: 'Operator'):
-        if op.id is OperatorIds.MENU_UPGRADE:
-            return UpgradeState(self)
-        elif op.id is OperatorIds.MENU_FINISH_ROUND:
-            return self.finish_round(ChallengeState)
         ns = ChallengeState(self)
-        # TODO search, analyze, and submit
-        return ns
-
-
-class Upgrade:
-    @staticmethod
-    def upgrade_cpu(current_level: int) -> int:
-        return current_level * 500
-
-    @staticmethod
-    def upgrade_internet(current_level: int) -> int:
-        return current_level * 500
-
-
-# Player can upgrade CPU and Internet plan
-class UpgradeState(State):
-    def __init__(self, clone: 'State' = None):
-        super().__init__(clone)
-
-    def is_applicable_operator(self, op: 'Operator'):
-        return (op.id is OperatorIds.MENU_CHALLENGE
-                or (not self.has_challenge() and (op.id is OperatorIds.UPGRADE_CPU
-                                                  or op.id is OperatorIds.UPGRADE_INTERNET_PLAN))
-                or op.id is OperatorIds.MENU_FINISH_ROUND)
-
-    def apply_operator(self, op: 'Operator'):
-        if op.id is OperatorIds.MENU_CHALLENGE:
-            return ChallengeState(self)
-        elif op.id is OperatorIds.MENU_FINISH_ROUND:
-            return self.finish_round(UpgradeState)
-        ns = UpgradeState(self)
-        if op.id is OperatorIds.UPGRADE_CPU:
-            req = Upgrade.upgrade_cpu(ns.info.cpu_level)
-            if req < ns.info.income:
-                ns.info.income -= req
-                ns.info.cpu_level += 1
-            else:
-                return MessageDisplayState(ns, "Warning", "Not enough money to upgrade CPU!")
-        elif op.id is OperatorIds.UPGRADE_INTERNET_PLAN:
-            req = Upgrade.upgrade_internet(ns.info.internet_level)
-            if req < ns.info.income:
-                ns.info.income -= req
-                ns.info.internet_level += 1
-            else:
-                return MessageDisplayState(ns, "Warning", "Not enough money to upgrade Internet!")
+        # TODO challenge related
         return ns
 
 
@@ -300,7 +274,7 @@ class GameEndState(MessageDisplayState):
 
 def goal_message(s: State) -> str:
     return (f"Congratulations! You makes the goal in {s.round}{'s' if s.round > 1 else ''} with a score of {s.info.score}."
-            f"You earned {s.info.total_income} in total and {s.info.income} is left.")
+            f"You earned {s.info.total_money} in total and {s.info.money} is left.")
 
 
 def copy_state(s: State) -> State:
@@ -308,8 +282,6 @@ def copy_state(s: State) -> State:
         return GameStartState(s)
     if isinstance(s, ChallengeState):
         return ChallengeState(s)
-    if isinstance(s, UpgradeState):
-        return UpgradeState(s)
     if isinstance(s, MessageDisplayState):
         return MessageDisplayState(s.continue_to, s.title, s.info)
     if isinstance(s, GameEndState):
@@ -319,16 +291,10 @@ def copy_state(s: State) -> State:
 
 class OperatorIds(Enum):
     MENU_CONTINUE = "Continue..."
-    MENU_CHALLENGE = "Move to challenge view"
-    MENU_UPGRADE = "Move to upgrade view"
-    MENU_FINISH_ROUND = "Finish this round"
     CHALLENGE_ACCEPT = "Accept the challenge"
     CHALLENGE_DECINE = "Decine the challenge"
-    CHALLENGE_SEARCH = "Search information online"
-    CHALLENGE_ANALYZE = "Analyze current information"
-    CHALLENGE_SUBMIT = "Submit the information you have now"
-    UPGRADE_CPU = "Upgrade your CPU to analyze faster"
-    UPGRADE_INTERNET_PLAN = "Upgrade your Internet plan to search faster"
+    CHALLENGE_CANCEL = "Cancel the accepted challenge"
+    PAY_DEBT = ""
 
 
 class Operator:
