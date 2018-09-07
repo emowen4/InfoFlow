@@ -417,7 +417,18 @@ class NewsSortingChallenge(Challenge):
                           "Archbishop asks pope to cancel conference on youth",
                           "Pennsylvania bishop punishes predecessor over clergy abuse",
                           "The Latest: McCain returns to DC ahead of Capitol ceremony",
-                          "Marc Thiessen: Pope Francis, corruption and what’s next – now I get how the Reformation happened"]]
+                          "Marc Thiessen: Pope Francis, corruption and what’s next – now I get how the Reformation happened"]],
+        *[NewsInformation("Science", content)
+          for content in ["Before it burned, Brazil’s National Museum gave much to science",
+                          "Jocelyn Bell Burnell wins big physics prize for 1967 pulsar discovery",
+                          "5 decades after his death, George Gamow’s contributions to science survive",
+                          "Rubidium atoms mimic the Eiffel Tower, a Möbius strip and other 3-D shapes",
+                          "‘Accessory to War’ probes the uneasy alliance between space science and the military",
+                          "A new material harnesses light to deice surfaces",
+                          "Electrons surf protons’ waves in a new kind of particle accelerator",
+                          "A massive net is being deployed to pick up plastic in the Pacific",
+                          "Newfound skull tunnels may speed immune cells’ trek to brain injuries",
+                          "An elusive Higgs boson decay has finally been spotted"]]
     ]
 
     score_correct_info = 10
