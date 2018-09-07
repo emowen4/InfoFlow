@@ -166,7 +166,7 @@ class State:
     def __init__(self, old: 'State' = None):
         if old:
             self.player = PlayerInfo.clone(old.player)
-            self.challenge = NewsSortChallenge.clone(old.challenge) if old.challenge else None
+            self.challenge = NewsSortingChallenge.clone(old.challenge) if old.challenge else None
             self.round = old.round
         else:
             self.player = PlayerInfo()
@@ -271,7 +271,7 @@ class ChallengeMenuState(State):
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
         if op.id is OperatorIds.CHALLENGE_ACCEPT:
-            ns = self.random_challenge[1](self, self.random_challenge[0])
+            ns = self.random_challenge[1](self)
             ns.player.current_challenge = self.random_challenge[0]
             ns.player.current_challenge.accept(ns.player)
             return ns.check_win_lose_state()
@@ -330,7 +330,7 @@ class GameEndState(MessageDisplayState):
 
 
 class NewsInformation:
-    all_categories = ("Business", "Entertainment & Arts", "Health & Medicine", "Nature & Environments", "Politics",
+    all_categories = ("Business", "Music & Arts", "Health & Medicine", "Nature & Environments", "Politics",
                       "Religions", "Science", "School", "Sports", "Technology", "Video Games", "Weather")
 
     def __init__(self, category: str, content: str):
@@ -349,21 +349,65 @@ class NewsInformation:
         return self.content
 
 
-class NewsSortChallenge(Challenge):
-    news_collection = [
-        # TODO Crawl some real news from sites like BBC and CNN
-        *[NewsInformation("A", f"A{i}") for i in range(20)],
-        *[NewsInformation("B", f"B{i}") for i in range(20)],
-        *[NewsInformation("C", f"C{i}") for i in range(20)],
-        *[NewsInformation("D", f"D{i}") for i in range(20)],
-        *[NewsInformation("E", f"E{i}") for i in range(20)],
-        *[NewsInformation("F", f"F{i}") for i in range(20)],
-        *[NewsInformation("G", f"G{i}") for i in range(20)],
-        *[NewsInformation("H", f"H{i}") for i in range(20)],
-        *[NewsInformation("I", f"I{i}") for i in range(20)]
-    ]
-
+class NewsSortingChallenge(Challenge):
     provided_ops = list([Operator(f"In category '{cat}'", cat) for cat in NewsInformation.all_categories])
+    news_collection = [
+        *[NewsInformation("Business", content)
+          for content in ["Trump says he's ready to hit China with another $267 billion in tariffs",
+                          "Kudlow: Job gains, wage growth show Trump's 'economic boom continues'",
+                          "Wells Fargo shares fall after DOJ reportedly examines potential fraud in business banking",
+                          "Bank of America downgrades Chevron, citing risk of losing some overseas production deals",
+                          "After a Starbucks opens in town, housing prices tend to rise, Harvard study finds",
+                          "Morgan Stanley raises its Amazon price target to the highest on Wall Street",
+                          "Bitcoin recovers above $7,000 as key South Korean exchange comes back online",
+                          "U.S. job growth surges; annual wage gain largest since 2009",
+                          "U.S.-Canada trade talks grind on, but 'final' issues unresolved",
+                          "Starbucks' Italian dream comes true, but it is not cheap"]],
+        *[NewsInformation("Music & Arts", content)
+          for content in ["Mac Miller: US rapper 'found dead at home' aged 26",
+                          "Spain parishioner botches Jesus and Mary statue restoration",
+                          "Burt Reynolds turned down James Bond - and 10 other stars who rejected great roles",
+                          "K-Pop band BTS get presidential congrats",
+                          "Nicki Minaj wanted to punch Travis Scott in the face over album battle",
+                          "Toronto Film Festival: Nine rising stars to watch",
+                          "Victoria Beckham for Vogue: Five moments from her video",
+                          "Avril Lavigne says she 'accepted death' before new song",
+                          "Eminem's Kamikaze: Is it time for the 'greatest' to quit?",
+                          "Wildlife presenter Johnny Kingdom killed by digger"]],
+        *[NewsInformation("Health & Medicine", content)
+          for content in ["Probiotics labelled 'quite useless'",
+                          "Teenagers who smoke and drink suffer ill effects by age of 17",
+                          "Government proposes energy drinks ban for children",
+                          "Artificial intelligence used to predict cancer growth",
+                          "Doctors’ mental health at tipping point",
+                          "How much are good marks due to genes?",
+                          "Doctors told to ditch Latin and use 'plain English'",
+                          "Gene-editing hope for muscular dystrophy",
+                          "Hair transplants: Fighting against my receding hairline",
+                          "Use honey first for a cough, new guidelines say"]],
+        *[NewsInformation("Nature & Environments", content)
+          for content in ["Wind and Solar Farms Can Bring Water to Sahara",
+                          "Ancient Farmers Profoundly Changed Our Climate",
+                          "Tree Species Distributions in Amazonia Modeled",
+                          "Endocrine Disruptors Found in Bottlenose Dolphins",
+                          "Global Warming: Worrying Lessons from the Past",
+                          "Why Leaf-Eating Asian Monkeys Do Not Have a Sweet Tooth",
+                          "Birds Retreating from Climate Change, Deforestation in Honduras Cloud Forests",
+                          "When It Rains, Snake Bites Soar",
+                          "New Source of Formic Acid Discovered Over Pacific, Indian Oceans",
+                          "'Live Fast, Die Young' Lifestyle Reflected in Birds' Feathers"]],
+        *[NewsInformation("Politics", content)
+          for content in ["George Papadopoulos gets 14 days in prison",
+                          "10 attacks Obama unleashed on Trump, GOP in midterm speech",
+                          "The Point: Barack Obama asked the question everyone's been wondering about the Republican Party",
+                          "Dangerous standoff developing in Syria between US and Russia",
+                          "US troops seek visas for family of heroic Iraqi interpreter",
+                          "Millennial Republican running for Congress in California",
+                          "U.S and India bolster military ties with focus on China",
+                          "Former FBI official McCabe under grand jury probe",
+                          "Mayor vows to make Portland, Ore., 'cleanest and most livable' in US",
+                          "Trump: New York Times should publish name of op-ed author"]]
+    ]
 
     score_correct_info = 10
     score_incorrect_info = -20
@@ -389,10 +433,10 @@ class NewsSortChallenge(Challenge):
         for cat, infos in self.sorted.items():
             for info in infos:
                 if info.category == cat:
-                    p.score += NewsSortChallenge.score_correct_info
+                    p.score += NewsSortingChallenge.score_correct_info
                     correct += 1
                 else:
-                    p.score += NewsSortChallenge.score_incorrect_info
+                    p.score += NewsSortingChallenge.score_incorrect_info
         correct_level = correct / len(self.to_sort)
         if correct_level >= .8:  # Require at least 80% of the information are sorted correctly to get success in this challenge
             p.score += self.level * Challenge.score_correct_multiplier_level
@@ -406,22 +450,22 @@ class NewsSortChallenge(Challenge):
         return (f"{super().__str__()}\tChallenge Level: {self.level}\n"
                 "\n".join([f"\t{'{0:3}'.format(ind)}: {info.content}" for ind, info in enumerate(self.to_sort)]))
 
-    def clone(self) -> 'NewsSortChallenge':
-        return NewsSortChallenge(self.level, self.to_sort, self.categories, self.sorted)
+    def clone(self) -> 'NewsSortingChallenge':
+        return NewsSortingChallenge(self.level, self.to_sort, self.categories, self.sorted)
 
     @staticmethod
-    def random(level) -> 'NewsSortChallenge':
+    def random(level) -> 'NewsSortingChallenge':
         count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
         to_sort = set()
         while len(to_sort) < count:
-            to_sort.add(choice(NewsSortChallenge.news_collection))
-        return NewsSortChallenge(level, list(to_sort))
+            to_sort.add(choice(NewsSortingChallenge.news_collection))
+        return NewsSortingChallenge(level, list(to_sort))
 
 
-class NewsSortChallengeState(ChallengeState):
-    def __init__(self, old: 'State' = None, challenge: 'NewsSortChallenge' = None):
+class NewsSortingChallengeState(ChallengeState):
+    def __init__(self, old: 'State' = None):
         super().__init__(old)
-        self.news_index = old.news_index + 1 if old and isinstance(old, NewsSortChallengeState) else 0
+        self.news_index = old.news_index + 1 if old and isinstance(old, NewsSortingChallengeState) else 0
 
     def is_applicable_operator(self, op: 'Operator'):
         return super().is_applicable_operator(op) or op.id in self.player.current_challenge.categories
@@ -430,7 +474,7 @@ class NewsSortChallengeState(ChallengeState):
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
         if self.news_index + 1 < len(self.player.current_challenge.to_sort):
-            ns = NewsSortChallengeState(self)
+            ns = NewsSortingChallengeState(self)
             ns.player.current_challenge.sort_to(self.player.current_challenge.to_sort[self.news_index], op.id)
             return ns
         else:
@@ -448,9 +492,9 @@ class NewsSortChallengeState(ChallengeState):
 
 class Challenges:
     all = [
-        (lambda level: NewsSortChallenge.random(level),
-         lambda old, challenge: NewsSortChallengeState(old=old, challenge=challenge),
-         NewsSortChallenge)
+        (lambda level: NewsSortingChallenge.random(level),
+         lambda old: NewsSortingChallengeState(old=old),
+         NewsSortingChallenge)
     ]
 
 
