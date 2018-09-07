@@ -12,25 +12,26 @@ PROBLEM_NAME = "Info Flow"
 PROBLEM_VERSION = "0.1"
 PROBLEM_AUTHORS = ["Dylan Li", "Joey Pan", "Owen Wang", "Shirley Zhang"]
 PROBLEM_CREATION_DATE = "04-Sep-2018"
-PROBLEM_DESC = \
+PROBLEM_DESC = (
     '''Welcome to Info Flow!
-    In the year 2025 when technology is highly developed, types of jobs that were completed by people are now replaced 
-    by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
-    A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
-    complicated information using human power. However, once you choose this platform, all your personal information, 
-    including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
-    Some of those challenges are complicated, ranging from physical work to careful thinking.
-    ------
+    In the year 2025 when technology is highly developed, types of jobs that were completed by people are now
+replaced by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
+A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
+complicated information using human power. However, once you choose this platform, all your personal information, 
+including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
+Some of those challenges are complicated, ranging from physical work to careful thinking.
+------------------------------------------------------------------------------------------------------------------------
     You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
-    your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
-    You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
-    you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
-    to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?
-'''
+your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
+You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
+you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
+to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
+)
 # </METADATA>
 
 # <COMMON_CODE>
 from enum import Enum
+from itertools import chain
 from random import choice
 from typing import List, Dict
 
@@ -95,6 +96,30 @@ class PlayerInfo:
     @staticmethod
     def clone(info: 'PlayerInfo'):
         return PlayerInfo(info.difficulty_level, info.score, info.finished, info.money, info.debt, info.energy, info.current_challenge)
+
+
+class OperatorIds(Enum):
+    MENU_CONTINUE = "Continue..."
+    CHALLENGE_ACCEPT = "Accept the challenge"
+    CHALLENGE_DECINE = "Decine the challenge"
+    CHALLENGE_CANCEL = "Cancel the accepted challenge"
+    PAY_DEBT = "Pay for the debt"
+    FINISH_ROUND = "End round"
+
+
+class Operator:
+    def __init__(self, name, id):
+        self.name = name
+        self.id = id
+
+    def is_applicable(self, s: 'State') -> bool:
+        return s.is_applicable_operator(self)
+
+    def apply(self, s: 'State') -> 'State':
+        return s.apply_operator(self)
+
+
+Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
 
 
 class Challenge:
@@ -211,21 +236,7 @@ class State:
 
 # Tell the background of the game, introduce the game mechanics, and declare the goal
 class GameStartState(State):
-    text_background = (
-        '''Welcome to Info Flow!
-    In the year 2025 when technology is highly developed, types of jobs that were completed by people are now
-replaced by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
-A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
-complicated information using human power. However, once you choose this platform, all your personal information, 
-including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
-Some of those challenges are complicated, ranging from physical work to careful thinking.
-------------------------------------------------------------------------------------------------------------------------
-    You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
-your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
-You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
-you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
-to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
-    )
+    text_background = PROBLEM_DESC
 
     def __init__(self):
         super().__init__()
@@ -237,7 +248,7 @@ to pay your debt.  Today, you will be facing your first challenge from this plat
         return ChallengeMenuState(self)
 
     def __str__(self):
-        return f"{super().__str__()}\nBackground:\n{GameStartState.text_background}"
+        return f"{super().__str__()}\nBackground: {GameStartState.text_background}"
 
 
 class ChallengeMenuState(State):
@@ -252,7 +263,9 @@ class ChallengeMenuState(State):
 
     def is_applicable_operator(self, op: 'Operator'):
         return (super().is_applicable_operator(op)
-                or (not self.has_challenge() and (op.id is OperatorIds.CHALLENGE_ACCEPT or op.id is OperatorIds.CHALLENGE_DECINE)))
+                or (not self.has_challenge()
+                    and ((self.player.energy >= self.random_challenge[0].energy_consume() and op.id is OperatorIds.CHALLENGE_ACCEPT)
+                         or op.id is OperatorIds.CHALLENGE_DECINE)))
 
     def apply_operator(self, op: 'Operator'):
         if super().is_applicable_operator(op):
@@ -317,19 +330,8 @@ class GameEndState(MessageDisplayState):
 
 
 class NewsInformation:
-    # News Categories:
-    # Business
-    # Entertainment & Arts
-    # Health & Medicine
-    # Nature & Environments
-    # Politics
-    # Religions
-    # Science
-    # Schools
-    # Sports
-    # Technology
-    # Video Games
-    # Weather
+    all_categories = ("Business", "Entertainment & Arts", "Health & Medicine", "Nature & Environments", "Politics",
+                      "Religions", "Science", "School", "Sports", "Technology", "Video Games", "Weather")
 
     def __init__(self, category: str, content: str):
         self.category = category
@@ -361,11 +363,13 @@ class NewsSortChallenge(Challenge):
         *[NewsInformation("I", f"I{i}") for i in range(20)]
     ]
 
+    provided_ops = list([Operator(f"In category '{cat}'", cat) for cat in NewsInformation.all_categories])
+
     score_correct_info = 10
     score_incorrect_info = -20
 
     def __init__(self, level: int, to_sort: List[NewsInformation], categories: List[str] = None, sorted: Dict[str, List[NewsInformation]] = None):
-        super().__init__("News Sort Challenge", level)
+        super().__init__("News Sorting Challenge", level)
         self.level = level
         self.to_sort = to_sort
         self.categories = categories if categories else list(set([info.category for info in to_sort]))
@@ -393,6 +397,7 @@ class NewsSortChallenge(Challenge):
         if correct_level >= .8:  # Require at least 80% of the information are sorted correctly to get success in this challenge
             p.score += self.level * Challenge.score_correct_multiplier_level
             p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
+            self.set_finished(p)
             return True, correct_level
         else:
             return False, correct_level
@@ -417,12 +422,6 @@ class NewsSortChallengeState(ChallengeState):
     def __init__(self, old: 'State' = None, challenge: 'NewsSortChallenge' = None):
         super().__init__(old)
         self.news_index = old.news_index + 1 if old and isinstance(old, NewsSortChallengeState) else 0
-        global OPERATORS
-        if old and isinstance(old, NewsSortChallengeState) and not challenge:
-            challenge = old.player.current_challenge
-        if challenge:
-            OPERATORS.clear()
-            OPERATORS += [Operator(f"Empty", "")] + [Operator(f"In category '{cat}'", cat) for cat in challenge.categories]
 
     def is_applicable_operator(self, op: 'Operator'):
         return super().is_applicable_operator(op) or op.id in self.player.current_challenge.categories
@@ -436,9 +435,6 @@ class NewsSortChallengeState(ChallengeState):
             return ns
         else:
             ns = ChallengeMenuState(self)
-            global OPERATORS
-            OPERATORS.clear()
-            OPERATORS += Operator.all_ops
             passed, corr = ns.player.current_challenge.submit(ns.player)
             if passed:
                 return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
@@ -452,7 +448,9 @@ class NewsSortChallengeState(ChallengeState):
 
 class Challenges:
     all = [
-        (lambda level: NewsSortChallenge.random(level), lambda old, challenge: NewsSortChallengeState(old=old, challenge=challenge))
+        (lambda level: NewsSortChallenge.random(level),
+         lambda old, challenge: NewsSortChallengeState(old=old, challenge=challenge),
+         NewsSortChallenge)
     ]
 
 
@@ -476,30 +474,6 @@ def copy_state(old: State) -> State:
     raise TypeError()
 
 
-class OperatorIds(Enum):
-    MENU_CONTINUE = "Continue..."
-    CHALLENGE_ACCEPT = "Accept the challenge"
-    CHALLENGE_DECINE = "Decine the challenge"
-    CHALLENGE_CANCEL = "Cancel the accepted challenge"
-    PAY_DEBT = "Pay for the debt"
-    FINISH_ROUND = "End round"
-
-
-class Operator:
-    def __init__(self, name, id):
-        self.name = name
-        self.id = id
-
-    def is_applicable(self, s: 'State') -> bool:
-        return s.is_applicable_operator(self)
-
-    def apply(self, s: 'State') -> 'State':
-        return s.apply_operator(self)
-
-
-Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
-
-
 def goal_test(s: 'State') -> bool: return s.is_goal()
 
 
@@ -513,7 +487,7 @@ INITIAL_STATE = GameStartState()
 # </INITIAL_STATE>
 
 # <OPERATORS>
-OPERATORS = Operator.all_ops[:]
+OPERATORS = Operator.all_ops + list(chain.from_iterable([ch.provided_ops for _, _, ch in Challenges.all]))
 # </OPERATORS>
 
 # <GOAL_TEST> (optional)
