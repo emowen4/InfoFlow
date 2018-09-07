@@ -406,7 +406,18 @@ class NewsSortingChallenge(Challenge):
                           "U.S and India bolster military ties with focus on China",
                           "Former FBI official McCabe under grand jury probe",
                           "Mayor vows to make Portland, Ore., 'cleanest and most livable' in US",
-                          "Trump: New York Times should publish name of op-ed author"]]
+                          "Trump: New York Times should publish name of op-ed author"]],
+        *[NewsInformation("Religion", content)
+          for content in ["County says cross on county seal is historical not religious",
+                          "New Jersey, New York announce church abuse investigations",
+                          "The Latest: NJ church says it will cooperate with probe",
+                          "Parishioner voices frustration over Catholic Church scandal",
+                          "'Shame on you': Man interrupts Washington archbishop at Mass",
+                          "Nebraska Catholic diocese rocked by old abuse allegations",
+                          "Archbishop asks pope to cancel conference on youth",
+                          "Pennsylvania bishop punishes predecessor over clergy abuse",
+                          "The Latest: McCain returns to DC ahead of Capitol ceremony",
+                          "Marc Thiessen: Pope Francis, corruption and what’s next – now I get how the Reformation happened"]]
     ]
 
     score_correct_info = 10
