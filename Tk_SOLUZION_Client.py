@@ -212,6 +212,7 @@ try:
   VIS.initialize_vis()
 except Exception as e:
   print(e)
+  raise e
   exit(1)
 
 
