@@ -30,6 +30,7 @@ to pay off your debt.  Today, you will be facing your first challenge from this 
 # </METADATA>
 
 # <COMMON_CODE>
+from copy import deepcopy
 from enum import Enum
 from itertools import chain
 from random import choice
@@ -43,7 +44,9 @@ class PlayerInfo:
                  money: int = 0,
                  debt: int = 1000,
                  energy: int = 100,
-                 current_challenge: 'Challenge' = None):
+                 current_challenge: 'Challenge' = None,
+                 set_game_finished: bool = False,
+                 is_game_finished: bool = False):
         self._difficulty_level = difficulty_level
         self.score = score
         self.finished = finished
@@ -51,6 +54,8 @@ class PlayerInfo:
         self._debt = debt
         self._energy = energy
         self.current_challenge = current_challenge
+        self.set_game_finished = set_game_finished
+        self.is_game_finished = is_game_finished
 
     @property
     def difficulty_level(self):
@@ -90,12 +95,13 @@ class PlayerInfo:
                 f"\tScore: {self.score}"
                 f"\tFinished Challenges: {self.finished}"
                 f"\tMoney/Debt: ${self.money}/${self.debt}"
-                f"\tDifficulty Level: {self.difficulty_level:03}"
+                f"\tDifficulty Level: {self.difficulty_level}"
                 f"\tHas accepted challenge: {'✔' if self.has_accepted_challenge() else '×'}")
 
     @staticmethod
     def clone(info: 'PlayerInfo'):
-        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.money, info.debt, info.energy, info.current_challenge)
+        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.money, info.debt, info.energy,
+                          info.current_challenge, info.set_game_finished, info.is_game_finished)
 
 
 class OperatorIds(Enum):
@@ -152,6 +158,10 @@ class Challenge:
         p.finished += 1
         p.difficulty_level += 1
 
+    def set_unfinished(self, p: 'PlayerInfo'):
+        p.finished += 1
+        p.difficulty_level -= 1
+
     def energy_consume(self):
         return (self.level + 2) * Challenge.energy_accept_multiplier_level
 
@@ -161,20 +171,20 @@ class Challenge:
     def __str__(self):
         return self.preview()
 
+    def clone(self):
+        raise NotImplementedError()
+
 
 class State:
     def __init__(self, old: 'State' = None):
         if old:
             self.player = PlayerInfo.clone(old.player)
-            self.challenge = NewsSortingChallenge.clone(old.challenge) if old.challenge else None
+            self.challenge = old.challenge.clone() if old.challenge else None
             self.round = old.round
         else:
             self.player = PlayerInfo()
             self.challenge = None
             self.round = 1
-
-    def has_challenge(self) -> bool:
-        return self.challenge is not None
 
     def is_applicable_operator(self, op: 'Operator') -> bool:
         return op.id is OperatorIds.FINISH_ROUND or op.id is OperatorIds.PAY_DEBT
@@ -186,25 +196,48 @@ class State:
             ns.player.energy += 80  # Recover 80% of total energy after each round
             ns.player.debt = int(ns.player.debt * 1.005)  # Add 0.5% debt according to the remaining debt after each round
         elif op.id is OperatorIds.PAY_DEBT:
-            if ns.player.money > 0:
-                to_pay = min(ns.player.debt, ns.player.money)
-                ns.player.debt -= to_pay
-                ns.player.money -= to_pay
-                return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.")
+            if not ns.player.is_game_finished:
+                if ns.player.money > 0:
+                    to_pay = min(ns.player.debt, ns.player.money)
+                    ns.player.debt -= to_pay
+                    ns.player.money -= to_pay
+                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid for your debt.")
+                else:
+                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay for your debt!")
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!")
+                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!")
         return ns.check_win_lose_state()
 
+    def has_challenge(self) -> bool:
+        return self.challenge is not None
+
+    def finish_challenge(self) -> None:
+        self.challenge = None
+        self.player.current_challenge = None
+
+    def finish_round(self, cls_state) -> 'State':
+        ns = object.__new__(cls_state)
+        ns.__init__(old=self)
+        ns.round += 1
+        return ns
+
     def check_win_lose_state(self):
-        if self.is_goal():
-            return GameEndState(self.player, "Congratulations!", self.goal_message())
-        elif self.round >= 30 and not self.is_goal():
-            return GameEndState(self.player, "You Lose!", self.lose_message())
-        else:
-            return self
+        if not self.player.is_game_finished and self.__is_goal():
+            ns = ChallengeMenuState(self)
+            ns.player.set_game_finished = True
+            # return MessageDisplayState(ChallengeMenuState(self), "Congratulations!", self.goal_message())
+            return ns
+        return self
+
+    def __is_goal(self) -> bool:
+        return self.player.debt is 0
 
     def is_goal(self) -> bool:
-        return self.player.debt is 0
+        if not self.player.is_game_finished and self.player.set_game_finished and self.__is_goal():
+            self.player.is_game_finished = True
+            return True
+        else:
+            return False
 
     def goal_message(self) -> str:
         return (f"You makes the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
@@ -227,19 +260,13 @@ class State:
     def __hash(self):
         return hash(str(self))
 
-    def finish_round(self, cls_state) -> 'State':
-        ns = object.__new__(cls_state)
-        ns.__init__(clone=self)
-        ns.round += 1
-        return ns
-
 
 # Tell the background of the game, introduce the game mechanics, and declare the goal
 class GameStartState(State):
     text_background = PROBLEM_DESC
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, old: 'State' = None):
+        super().__init__(old)
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -254,7 +281,8 @@ class GameStartState(State):
 class ChallengeMenuState(State):
     def __init__(self, old: 'State' = None):
         super().__init__(old)
-        self.random_challenge = list(old.random_challenge if isinstance(old, ChallengeMenuState) else self.__random_challenge())
+        # self.random_challenge = list(old.random_challenge if isinstance(old, ChallengeMenuState) else self.__random_challenge())
+        self.random_challenge = list(self.__random_challenge())
         self.random_challenge[0] = self.random_challenge[0].clone()
 
     def __random_challenge(self):
@@ -294,17 +322,22 @@ class ChallengeState(State):
 
     def apply_operator(self, op: 'Operator'):
         if op.id is OperatorIds.CHALLENGE_CANCEL:
-            ns = ChallengeState(self)
-            ns.player.current_challenge.cancel(self.player)
+            ns = ChallengeMenuState(self)
+            ns.player.current_challenge.cancel(ns.player)
             return ns
 
 
 class MessageDisplayState(State):
-    def __init__(self, continue_to: 'State', title: str, info: str):
-        super().__init__(continue_to)
-        self.continue_to = continue_to
-        self.title = title
-        self.info = info
+    def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, old: 'State' = None):
+        super().__init__(old)
+        if isinstance(old, MessageDisplayState):
+            self.continue_to = old.continue_to
+            self.title = old.title
+            self.info = old.info
+        else:
+            self.continue_to = continue_to
+            self.title = title
+            self.info = info
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -314,22 +347,6 @@ class MessageDisplayState(State):
 
     def __str__(self):
         return f"{self.title}\n{self.info}"
-
-
-# If needed
-class GameEndState(MessageDisplayState):
-    def __init__(self, player: 'PlayerInfo', title: str, info: str):
-        super().__init__(None, title, info)
-        self.player = player
-
-    def is_applicable_operator(self, op: 'Operator'):
-        return op.id is OperatorIds.MENU_CONTINUE
-
-    def apply_operator(self, op: 'Operator'):
-        return ChallengeMenuState(self)
-
-    def is_goal(self):
-        return True
 
 
 class NewsInformation:
@@ -441,12 +458,12 @@ class NewsSortingChallenge(Challenge):
         super().__init__("News Sorting Challenge", level)
         self.level = level
         self.to_sort = to_sort
-        self.categories = categories if categories else list(set([info.category for info in to_sort]))
+        self.categories = deepcopy(categories) if categories else list(set([info.category for info in to_sort]))
         self.categories.sort()
-        self.sorted = sorted if sorted else {}
+        self.sorted = sorted if deepcopy(sorted) else {}
 
     def sort_to(self, info: 'NewsInformation', category: 'str'):
-        self.sorted.setdefault(category, [])
+        self.sorted.setdefault(category, list())
         self.sorted[category].append(info)
 
     def remove_from(self, info: 'NewsInformation', category: 'str'):
@@ -469,6 +486,7 @@ class NewsSortingChallenge(Challenge):
             self.set_finished(p)
             return True, correct_level
         else:
+            self.set_unfinished(p)
             return False, correct_level
 
     def __str__(self):
@@ -506,6 +524,7 @@ class NewsSortingChallengeState(ChallengeState):
             ns = ChallengeMenuState(self)
             ns.player.current_challenge.sort_to(self.player.current_challenge.to_sort[self.news_index], op.id)
             passed, corr = ns.player.current_challenge.submit(ns.player)
+            ns.finish_challenge()
             if passed:
                 return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
             else:
@@ -529,14 +548,6 @@ def goal_message(s: State) -> str:
 
 
 def copy_state(old: State) -> State:
-    if isinstance(old, GameStartState):
-        return GameStartState()
-    if isinstance(old, ChallengeMenuState):
-        return ChallengeMenuState(old)
-    if isinstance(old, MessageDisplayState):
-        return MessageDisplayState(old.continue_to, old.title, old.info)
-    if isinstance(old, GameEndState):
-        return GameEndState(old.player, old.title, old.info)
     if issubclass(type(old), State):
         clone = object.__new__(type(old))
         clone.__init__(old=old)
@@ -561,7 +572,7 @@ OPERATORS = Operator.all_ops + list(chain.from_iterable([ch.provided_ops for _, 
 # </OPERATORS>
 
 # <GOAL_TEST> (optional)
-GOAL_TEST = lambda s: isinstance(s, GameEndState) and goal_test(s)
+GOAL_TEST = lambda s: goal_test(s)
 # </GOAL_TEST>
 
 # <GOAL_MESSAGE_FUNCTION> (optional)
