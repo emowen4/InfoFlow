@@ -201,9 +201,9 @@ class State:
                     to_pay = min(ns.player.debt, ns.player.money)
                     ns.player.debt -= to_pay
                     ns.player.money -= to_pay
-                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid for your debt.")
+                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.")
                 else:
-                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay for your debt!")
+                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!")
             else:
                 return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!")
         return ns.check_win_lose_state()
