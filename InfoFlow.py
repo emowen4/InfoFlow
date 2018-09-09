@@ -185,6 +185,7 @@ class State:
             self.player = PlayerInfo()
             self.challenge = None
             self.round = 1
+        self.selected_operator = None
 
     def is_applicable_operator(self, op: 'Operator') -> bool:
         return op.id is OperatorIds.FINISH_ROUND or op.id is OperatorIds.PAY_DEBT
@@ -207,6 +208,9 @@ class State:
             else:
                 return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!")
         return ns.check_win_lose_state()
+
+    def store_operator(self, op: 'Operator'):
+        self.selected_operator = op
 
     def has_challenge(self) -> bool:
         return self.challenge is not None

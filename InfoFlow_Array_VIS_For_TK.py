@@ -26,19 +26,54 @@ def initialize_tk(width, height, title):
 
 
 class StateRenderer:
-    def render(self, state: 'State'):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         raise NotImplementedError()
+
+    @staticmethod
+    def get_renderer(state_type) -> 'StateRenderer':
+        if state_type in StateRenderer.all:
+            return StateRenderer.all[state_type]
+        else:
+            raise TypeError()
+
+
+class SecondLevelStateRenderer(StateRenderer):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        StateRenderer.get_renderer(type(last_state)).render(display, last_state, last_state.selected_operator)
 
 
 class GameStartStateRenderer(StateRenderer):
-    def render(self, display: 'StateDisplay', state: 'State'):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        # TODO
+        pass
+
+
+class ChallengeMenuStateRenderer(StateRenderer):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        # TODO
+        pass
+
+
+class MessageDisplayStateRenderer(SecondLevelStateRenderer):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        super().render(display, state, last_state)
+        # TODO
+        pass
+
+
+class NewsSortingChallengeStateRenderer(SecondLevelStateRenderer):
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        super().render(display, state, last_state)
         # TODO
         pass
 
 
 StateRenderer.all = {
     # TODO
-    GameStartState: GameStartStateRenderer()
+    GameStartState: GameStartStateRenderer(),
+    ChallengeMenuState: ChallengeMenuStateRenderer(),
+    MessageDisplayState: MessageDisplayStateRenderer(),
+    NewsSortingChallengeState: NewsSortingChallengeStateRenderer()
 }
 
 
@@ -46,8 +81,12 @@ def initialize_vis():
     initialize_tk(width=600, height=300, title="InfoFlow")
 
 
+StateRenderer.last_state: 'State' = None
+
+
 def render_state(state: 'State'):
-    print("In render_state, state is " + str(state))  # DEBUG ONLY
+    # print("In render_state, state is " + str(state))  # DEBUG ONLY
     if type(state) in StateRenderer.all:
         renderer = StateRenderer.all[type(state)]
-        renderer.render(show_state_array.STATE_WINDOW, state)
+        renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+        StateRenderer.last_state = state
