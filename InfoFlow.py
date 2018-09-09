@@ -22,10 +22,10 @@ including privacy, will be released to this platform. It offers a variety of tas
 Some of those challenges are complicated, ranging from physical work to careful thinking.
 ------------------------------------------------------------------------------------------------------------------------
     You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
-your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay the debt. 
-You have no solidified skills but the only platform as mentioned earlier. If you cannot pay the debt on time, 
+your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay off the debt. 
+You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time, 
 you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
-to pay your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
+to pay off your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
 )
 # </METADATA>
 
@@ -41,7 +41,7 @@ class PlayerInfo:
                  score: int = 0,
                  finished: int = 0,
                  money: int = 0,
-                 debt: int = 10000,
+                 debt: int = 1000,
                  energy: int = 100,
                  current_challenge: 'Challenge' = None):
         self._difficulty_level = difficulty_level
@@ -184,15 +184,15 @@ class State:
         if op.id is OperatorIds.FINISH_ROUND:
             ns.round += 1
             ns.player.energy += 80  # Recover 80% of total energy after each round
-            ns.player.debt = int(ns.player.debt * 1.05)  # Add 5% debt according to the remaining debt after each round
+            ns.player.debt = int(ns.player.debt * 1.005)  # Add 0.5% debt according to the remaining debt after each round
         elif op.id is OperatorIds.PAY_DEBT:
             if ns.player.money > 0:
                 to_pay = min(ns.player.debt, ns.player.money)
                 ns.player.debt -= to_pay
                 ns.player.money -= to_pay
-                return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid for your debt.")
+                return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.")
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay for your debt!")
+                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!")
         return ns.check_win_lose_state()
 
     def check_win_lose_state(self):
@@ -373,10 +373,10 @@ class NewsSortingChallenge(Challenge):
                           "K-Pop band BTS get presidential congrats",
                           "Nicki Minaj wanted to punch Travis Scott in the face over album battle",
                           "Toronto Film Festival: Nine rising stars to watch",
-                          "Victoria Beckham for Vogue: Five moments from her video",
+                          "Yazoo Music Festival Free music celebration set for Oct. 6 on city's historic Main Street",
                           "Avril Lavigne says she 'accepted death' before new song",
                           "Eminem's Kamikaze: Is it time for the 'greatest' to quit?",
-                          "Wildlife presenter Johnny Kingdom killed by digger"]],
+                          "He used to play heavy metal. Now he’s a rising country star"]],
         *[NewsInformation("Health & Medicine", content)
           for content in ["Probiotics labelled 'quite useless'",
                           "Teenagers who smoke and drink suffer ill effects by age of 17",
@@ -401,7 +401,7 @@ class NewsSortingChallenge(Challenge):
                           "A massive net is being deployed to pick up plastic in the Pacific",
                           "'Live Fast, Die Young' Lifestyle Reflected in Birds' Feathers"]],
         *[NewsInformation("Politics", content)
-          for content in ["George Papadopoulos gets 14 days in prison",
+          for content in ["Will More Veterans in Politics Make Politics Better?",
                           "10 attacks Obama unleashed on Trump, GOP in midterm speech",
                           "The Point: Barack Obama asked the question everyone's been wondering about the Republican Party",
                           "Dangerous standoff developing in Syria between US and Russia",
