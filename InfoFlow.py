@@ -42,8 +42,7 @@ class PlayerInfo:
                  score: int = 0,
                  finished: int = 0,
                  money: int = 0,
-                 # debt: int = 1000,
-                 debt: int = 100,  # DEBUG
+                 debt: int = 1000,
                  energy: int = 100,
                  current_challenge: 'Challenge' = None,
                  set_game_finished: bool = False,
@@ -203,11 +202,11 @@ class State:
                     to_pay = min(ns.player.debt, ns.player.money)
                     ns.player.debt -= to_pay
                     ns.player.money -= to_pay
-                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.")
+                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.", old=self)
                 else:
-                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!")
+                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!", old=self)
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!")
+                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!", old=self)
         return ns.check_win_lose_state()
 
     def store_operator(self, op: 'Operator'):
@@ -350,7 +349,7 @@ class MessageDisplayState(State):
         return self.continue_to
 
     def __str__(self):
-        return f"{self.title}\n{self.info}"
+        return f"{super().__str__()}\n{self.title}\n{self.info}"
 
 
 class NewsInformation:
@@ -525,8 +524,7 @@ class NewsSortingChallenge(Challenge):
 
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
-        # count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
-        count = 1  # DEBUG
+        count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
         to_sort = set()
         while len(to_sort) < count:
             to_sort.add(choice(NewsSortingChallenge.news_collection))
@@ -554,9 +552,9 @@ class NewsSortingChallengeState(ChallengeState):
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             if passed:
-                return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
+                return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=self)
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.")
+                return MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.", old=self)
 
     def __str__(self):
         return (f"{super().__str__()}\nNews: {self.player.current_challenge.to_sort[self.news_index]}"
