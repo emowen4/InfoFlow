@@ -452,7 +452,30 @@ class NewsSortingChallenge(Challenge):
                           "A new material harnesses light to deice surfaces",
                           "Electrons surf protons’ waves in a new kind of particle accelerator",
                           "Newfound skull tunnels may speed immune cells’ trek to brain injuries",
-                          "An elusive Higgs boson decay has finally been spotted"]]
+                          "A massive net is being deployed to pick up plastic in the Pacific",
+                          "An elusive Higgs boson decay has finally been spotted"]],
+         *[NewsInformation("Sports", content)
+          for content in ["Texans RT Sentreal Henderson out for season with ankle injury",
+                          "Previewing wingers for the 2018 fantasy hockey season",
+                          "Nebraska coach questions play in Adrian Martinez injury",
+                          "Minshew leads Washington State over San Jose State 31-0",
+                          "32 things we learned from Week 1 of the 2018 NFL season",
+                          "NFL Week 1 winners, losers: Cowboys offense looks stuck",
+                          "Is the 2018 Basketball Hall of Fame class the best ever?",
+                          "Kobe Bryant says his fans will 'fall in line' with LeBron James on the Lakers",
+                          "Hockey Hall: Please, no more keg stands on Stanley Cup",
+                          "NBA team-by-team offseason grades: Who won the summer?"]],
+        *[NewsInformation("Game", content)
+          for content in ["PUBG On PC Gets New Update; Here's The Full Patch Notes",
+                          "Final Fantasy Crystal Chronicles Remaster Coming To Nintendo Switch, PS4",
+                          "Game Release Dates Of 2018: Spider-Man PS4, Call Of Duty: Black Ops 4, Red Dead Redemption 2",
+                          "Pokemon: Let's Go, Pikachu / Eevee Trailer Shows Off Brand-New Moves And Celadon City",
+                          "Assassin's Creed Odyssey's Opening Hours Have Two Things We Like, And Two We Don't",
+                          "Fortnite: Where Are The Different Stone Heads? (Week 9, Season 5 Challenge Locations)",
+                          "League of Legends unveils Odyssey: Extraction PvE mode with new cinematic",
+                          "For the first time ever, WoW's top guild will stream its race to beat the brutal new raid",
+                          "Rainbow Six Siege game director talks Castle and Thatcher balance reworks",
+                          "China takes down Korea to win the 2018 Asian Games"]]
     ]
 
     score_correct_info = 10
