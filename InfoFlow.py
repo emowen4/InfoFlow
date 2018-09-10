@@ -42,7 +42,8 @@ class PlayerInfo:
                  score: int = 0,
                  finished: int = 0,
                  money: int = 0,
-                 debt: int = 1000,
+                 # debt: int = 1000,
+                 debt: int = 100,  # DEBUG
                  energy: int = 100,
                  current_challenge: 'Challenge' = None,
                  set_game_finished: bool = False,
@@ -285,7 +286,6 @@ class GameStartState(State):
 class ChallengeMenuState(State):
     def __init__(self, old: 'State' = None):
         super().__init__(old)
-        # self.random_challenge = list(old.random_challenge if isinstance(old, ChallengeMenuState) else self.__random_challenge())
         self.random_challenge = list(self.__random_challenge())
         self.random_challenge[0] = self.random_challenge[0].clone()
 
@@ -355,7 +355,7 @@ class MessageDisplayState(State):
 
 class NewsInformation:
     all_categories = ("Business", "Music & Arts", "Health & Medicine", "Nature & Environments", "Politics",
-                      "Religion", "Science", "School", "Sports", "Technology", "Video Games", "Weather")
+                      "Religion", "Science", "Sports", "Video Games")
 
     def __init__(self, category: str, content: str):
         self.category = category
@@ -465,7 +465,7 @@ class NewsSortingChallenge(Challenge):
                           "Kobe Bryant says his fans will 'fall in line' with LeBron James on the Lakers",
                           "Hockey Hall: Please, no more keg stands on Stanley Cup",
                           "NBA team-by-team offseason grades: Who won the summer?"]],
-        *[NewsInformation("Game", content)
+        *[NewsInformation("Video Games", content)
           for content in ["PUBG On PC Gets New Update; Here's The Full Patch Notes",
                           "Final Fantasy Crystal Chronicles Remaster Coming To Nintendo Switch, PS4",
                           "Game Release Dates Of 2018: Spider-Man PS4, Call Of Duty: Black Ops 4, Red Dead Redemption 2",
@@ -525,7 +525,8 @@ class NewsSortingChallenge(Challenge):
 
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
-        count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
+        # count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
+        count = 1  # DEBUG
         to_sort = set()
         while len(to_sort) < count:
             to_sort.add(choice(NewsSortingChallenge.news_collection))
