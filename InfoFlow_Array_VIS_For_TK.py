@@ -275,12 +275,67 @@ class GameStartStateRenderer(StateRenderer):
 
 class ChallengeMenuStateRenderer(StateRenderer):
     def init(self, display):
-        pass
+        self.c_menus = [[i * 100 + 50, 100 + 50 * i, random.randint(0, 50), random.randint(0, 10), .5, .5] for i in range(4)]
+        self.font = StateDisplay.get_font("Helvetica", 16, italic=True)
+        self.label_accept = display.canvas_game.create_text(self.c_menus[0][0], self.c_menus[0][1], anchor=W,
+                                                            text=OperatorIds.CHALLENGE_ACCEPT.name, fill="white", font=self.font)
+        self.label_decine = display.canvas_game.create_text(self.c_menus[1][0], self.c_menus[1][1], anchor=W,
+                                                            text=OperatorIds.CHALLENGE_DECINE.name, fill="white", font=self.font)
+        self.label_pay = display.canvas_game.create_text(self.c_menus[2][0], self.c_menus[2][1], anchor=W,
+                                                         text=OperatorIds.PAY_DEBT.name, fill="white", font=self.font)
+        self.label_finish_round = display.canvas_game.create_text(self.c_menus[3][0], self.c_menus[3][1], anchor=W,
+                                                                  text=OperatorIds.FINISH_ROUND.name, fill="white", font=self.font)
+
+    def is_static_renderer(self):
+        return False
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        # TODO
-        pass
+
+    def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        for t in self.c_menus:
+            x, y, off_x, off_y, s_x, s_y = t
+            t[0], t[1], t[2], t[3] = x + s_x, y + s_y, off_x + s_x, off_y + s_y
+            if t[2] <= 0 or t[2] >= 50:
+                t[4] = -t[4]
+            if t[3] <= 0 or t[3] >= 10:
+                t[5] = -t[5]
+        display.canvas_game.coords(self.label_accept, self.c_menus[0][0], self.c_menus[0][1])
+        display.canvas_game.coords(self.label_decine, self.c_menus[1][0], self.c_menus[1][1])
+        display.canvas_game.coords(self.label_pay, self.c_menus[2][0], self.c_menus[2][1])
+        display.canvas_game.coords(self.label_finish_round, self.c_menus[3][0], self.c_menus[3][1])
+
+    def is_static_post_renderer(self):
+        return False
+
+    def post_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        if last_state.selected_operator.id is OperatorIds.CHALLENGE_ACCEPT:
+            self.pos_select = self.c_menus[0]
+            self.text_select = self.label_accept
+        elif last_state.selected_operator.id is OperatorIds.CHALLENGE_DECINE:
+            self.pos_select = self.c_menus[1]
+            self.text_select = self.label_decine
+        elif last_state.selected_operator.id is OperatorIds.PAY_DEBT:
+            self.pos_select = self.c_menus[2]
+            self.text_select = self.label_pay
+        elif last_state.selected_operator.id is OperatorIds.FINISH_ROUND:
+            self.pos_select = self.c_menus[3]
+            self.text_select = self.label_finish_round
+        self.size_select = 16
+        self.font_select = StateDisplay.get_font("Helvetica", self.size_select, bold=True, italic=True, nocache=True)
+
+    def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        if self.size_select < 22:
+            display.canvas_game.itemconfigure(self.text_select, font=self.font_select)
+            self.font_select.configure(size=self.size_select + 2)
+            self.size_select += 2
+            return True
+        elif self.pos_select[0] < 650:
+            display.canvas_game.coords(self.text_select, self.pos_select[0], self.pos_select[1])
+            self.pos_select[0] += 30
+            return True
+        else:
+            return False
 
 
 class MessageDisplayStateRenderer(StateRenderer):
@@ -336,14 +391,13 @@ def render_state(state: 'State'):
         if show_state_array.STATE_WINDOW:
             renderer.post_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
             if not renderer.is_static_post_renderer():
-                keep_render = True
-                while show_state_array.STATE_WINDOW and keep_render:
-                    keep_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                keep_post_render = True
+                while show_state_array.STATE_WINDOW and keep_post_render:
+                    keep_post_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
                     show_state_array.STATE_WINDOW.root.update()
                     time.sleep(.05)
 
     show_state_array.STATE_WINDOW.canvas_game.delete("all")
-    keep_render = True
 
     def render():
         global in_render_state, renderer
@@ -357,6 +411,7 @@ def render_state(state: 'State'):
                     renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
                     time.sleep(.05)
 
+    keep_render = True
     Thread(target=lambda: render()).start()
     # StateRenderer.get_renderer(type(state)).render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
     StateRenderer.last_state = state
