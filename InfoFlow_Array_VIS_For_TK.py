@@ -191,7 +191,7 @@ class StateRenderer:
     @staticmethod
     def get_renderer(state_type) -> 'StateRenderer':
         if state_type in StateRenderer.all:
-            return StateRenderer.all[state_type]
+            return StateRenderer.all[state_type]()
         else:
             raise TypeError(state_type)
 
@@ -238,20 +238,21 @@ class GameStartStateRenderer(StateRenderer):
         super().render(display, state, last_state)
 
     def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        for i in range(len(self.rains[:])):
-            r, t = self.rains[i], self.text_rains[i]
+        rains, text_rains = self.rains[:], self.text_rains[:]
+        for i in range(len(rains)):
+            r, t = rains[i], text_rains[i]
             r.x += r.speed
             if display:
                 display.canvas_game.move(t, r.speed, 0)
-            if r.is_disappeared():
+            if r.is_disappeared() and r in rains:
                 if display:
                     display.canvas_game.delete(t)
-                self.rains.remove(r)
-                self.text_rains.remove(t)
+                rains.remove(r)
+                text_rains.remove(t)
                 nr = GameStartStateRenderer.Rain.random()
-                self.rains.append(nr)
-                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
-        display.root.update()
+                rains.append(nr)
+                text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
+        self.rains, self.text_rains = rains, text_rains
 
     def is_static_post_renderer(self):
         return False
@@ -306,10 +307,10 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
 StateRenderer.all = {
     # TODO
-    GameStartState: GameStartStateRenderer(),
-    ChallengeMenuState: ChallengeMenuStateRenderer(),
-    MessageDisplayState: MessageDisplayStateRenderer(),
-    NewsSortingChallengeState: NewsSortingChallengeStateRenderer()
+    GameStartState: lambda: GameStartStateRenderer(),
+    ChallengeMenuState: lambda: ChallengeMenuStateRenderer(),
+    MessageDisplayState: lambda: MessageDisplayStateRenderer(),
+    NewsSortingChallengeState: lambda: NewsSortingChallengeStateRenderer()
 }
 
 
@@ -338,6 +339,7 @@ def render_state(state: 'State'):
                 keep_render = True
                 while show_state_array.STATE_WINDOW and keep_render:
                     keep_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                    show_state_array.STATE_WINDOW.root.update()
                     time.sleep(.05)
 
     show_state_array.STATE_WINDOW.canvas_game.delete("all")
