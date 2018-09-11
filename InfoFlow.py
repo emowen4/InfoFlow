@@ -25,7 +25,7 @@ Some of those challenges are complicated, ranging from physical work to careful 
 your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt. 
 You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time, 
 you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
-to pay off your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
+to pay off your debt. Today, you will be facing your first challenge from this platform. What will that be...?'''
 )
 # </METADATA>
 
@@ -43,6 +43,7 @@ class PlayerInfo:
                  finished: int = 0,
                  money: int = 0,
                  debt: int = 1000,
+                 # debt: int = 100,  # DEBUG
                  energy: int = 100,
                  current_challenge: 'Challenge' = None,
                  set_game_finished: bool = False,
@@ -83,6 +84,22 @@ class PlayerInfo:
 
     def has_accepted_challenge(self):
         return self.current_challenge is not None
+
+    def __eq__(self, other):
+        if other is self:
+            return True
+        if other is None:
+            return False
+        return (self.energy is other.energy
+                and self.score is other.score
+                and self.finished is other.finished
+                and self.money is other.money
+                and self.debt is other.debt
+                and self.difficulty_level is other.difficulty_level
+                and self.has_accepted_challenge() is other.has_accepted_challenge()
+                and self.current_challenge is other.current_challenge
+                and self.set_game_finished is other.set_game_finished
+                and self.is_game_finished is other.is_game_finished)
 
     def __str__(self):
         block_full, block_three_forth, block_half, block_one_fourth, block_empty = '█', '▊', '▌', '▎', '　'
@@ -251,6 +268,9 @@ class State:
         return (f"You didn't make the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
                 f"You have {self.player.money} and {self.player.debt} is needed to pay.")
 
+    def describe_state(self) -> str:
+        return ""
+
     def __eq__(self, s):
         if self == s:
             return True
@@ -278,8 +298,11 @@ class GameStartState(State):
     def apply_operator(self, op: 'Operator'):
         return ChallengeMenuState(self)
 
+    def describe_state(self) -> str:
+        return f"{GameStartState.text_background}"
+
     def __str__(self):
-        return f"{super().__str__()}\nBackground: {GameStartState.text_background}"
+        return f"{super().__str__()}\n{self.describe_state()}"
 
 
 class ChallengeMenuState(State):
@@ -312,8 +335,11 @@ class ChallengeMenuState(State):
             ns.random_challenge = ns.__random_challenge()
             return ns.check_win_lose_state()
 
+    def describe_state(self) -> str:
+        return f"You have a challenge available: {self.random_challenge[0].preview()}."
+
     def __str__(self):
-        return f"{super().__str__()}\nYou have a challenge available: {self.random_challenge[0].preview()}."
+        return f"{super().__str__()}\n{self.describe_state()}"
 
 
 class ChallengeState(State):
@@ -348,8 +374,11 @@ class MessageDisplayState(State):
     def apply_operator(self, op: 'Operator'):
         return self.continue_to
 
+    def describe_state(self) -> str:
+        return f"{self.title}\n{self.info}"
+
     def __str__(self):
-        return f"{super().__str__()}\n{self.title}\n{self.info}"
+        return f"{super().__str__()}\n{self.describe_state()}"
 
 
 class NewsInformation:
@@ -453,7 +482,7 @@ class NewsSortingChallenge(Challenge):
                           "Newfound skull tunnels may speed immune cells’ trek to brain injuries",
                           "A massive net is being deployed to pick up plastic in the Pacific",
                           "An elusive Higgs boson decay has finally been spotted"]],
-         *[NewsInformation("Sports", content)
+        *[NewsInformation("Sports", content)
           for content in ["Texans RT Sentreal Henderson out for season with ankle injury",
                           "Previewing wingers for the 2018 fantasy hockey season",
                           "Nebraska coach questions play in Adrian Martinez injury",
@@ -525,6 +554,7 @@ class NewsSortingChallenge(Challenge):
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
         count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
+        # count = 1  # DEBUG
         to_sort = set()
         while len(to_sort) < count:
             to_sort.add(choice(NewsSortingChallenge.news_collection))
@@ -556,9 +586,12 @@ class NewsSortingChallengeState(ChallengeState):
             else:
                 return MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.", old=self)
 
-    def __str__(self):
-        return (f"{super().__str__()}\nNews: {self.player.current_challenge.to_sort[self.news_index]}"
+    def describe_state(self) -> str:
+        return (f"News: {self.player.current_challenge.to_sort[self.news_index]}"
                 f"\t(News sorted: {self.news_index}/{len(self.player.current_challenge.to_sort)})\nWhich category should this news belong to?")
+
+    def __str__(self):
+        return f"{super().__str__()}\n{self.describe_state()}"
 
 
 class Challenges:

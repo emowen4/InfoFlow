@@ -1,7 +1,7 @@
 import show_state_array
 from InfoFlow import *
 import tkinter as tk
-import tkinter.ttk as ttk
+from tkinter import font
 from tkinter import N, S, W, E
 from typing import List
 
@@ -22,68 +22,81 @@ class StateDisplay(tk.Frame):
         # |-----------------------|           |
         # |     State Describe    |           |
         # -------------------------------------
-        self.style(self.root, bg="black")
+        background, foreground = "black", "darkgray"
+        self.style(self.root, bg=background)
         # Player Info
-        self.frame_player_info = self.style(tk.LabelFrame(parent, text="Player Stats", borderwidth=2, relief="groove"),
-                                            bg="black", fg="white")
+        self.frame_player_info = self.style(tk.LabelFrame(self.root, text="Player Stats", borderwidth=2, relief="groove", font=self.get_font("Helvetica", 18, bold=True)),
+                                            bg=background, fg=foreground)
         self.frame_player_info.grid(row=0, column=0, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
-        self.label_energy = self.style(tk.Label(self.frame_player_info, text="Energy: "),
-                                       bg="black", fg="white")
-        self.label_energy.grid(row=0, column=0, sticky=E)
+        self.label_energy = self.style(tk.Label(self.frame_player_info, text="Energy: ", font=self.get_font("Helvetica", 12, bold=True)),
+                                       bg=background, fg=foreground)
+        self.label_energy.grid(row=0, column=0, sticky=W)
         self.canvas_energy = self.style(tk.Canvas(self.frame_player_info, width=100, height=20),
-                                        bg="black", hc="white", ht=1)
+                                        bg=background, hc="white", ht=1)
         self.canvas_energy.grid(row=0, column=1, sticky=W)
         color_energy = self.rgb2hex(46, 204, 113)
         self.rect_energy = self.canvas_energy.create_rectangle(0, 0, 100, 20, fill=color_energy, outline=color_energy)
+        # self.text_energy = self.canvas_energy.create_text(25, 10, text="100", font=self.get_font("Helvetica", 12, bold=True))
         self.label_score = self.style(tk.Label(self.frame_player_info, text="Score: "),
-                                      bg="black", fg="white")
-        self.label_score.grid(row=1, column=0, sticky=E)
-        self.text_score = self.style(tk.Label(self.frame_player_info),
-                                     bg="black", fg="white")
+                                      bg=background, fg=foreground, font=self.get_font("Helvetica", 12, bold=True))
+        self.label_score.grid(row=1, column=0, sticky=W)
+        self.text_score = self.style(tk.Label(self.frame_player_info, font=self.get_font("Helvetica", 12)),
+                                     bg=background, fg=foreground)
         self.text_score.grid(row=1, column=1, sticky=W)
-        self.label_finished = self.style(tk.Label(self.frame_player_info, text="Finished Challenges: "),
-                                         bg="black", fg="white")
-        self.label_finished.grid(row=2, column=0, sticky=E)
-        self.text_finished = self.style(tk.Label(self.frame_player_info),
-                                        bg="black", fg="white")
+        self.label_finished = self.style(tk.Label(self.frame_player_info, text="Finished Challenges: ", font=self.get_font("Helvetica", 12, bold=True)),
+                                         bg=background, fg=foreground)
+        self.label_finished.grid(row=2, column=0, sticky=W)
+        self.text_finished = self.style(tk.Label(self.frame_player_info, font=self.get_font("Helvetica", 12)),
+                                        bg=background, fg=foreground)
         self.text_finished.grid(row=2, column=1, sticky=W)
-        self.label_money = self.style(tk.Label(self.frame_player_info, text="Money/Debt: "),
-                                      bg="black", fg="white")
-        self.label_money.grid(row=3, column=0, sticky=E)
-        self.text_money = self.style(tk.Label(self.frame_player_info),
-                                     bg="black", fg="white")
+        self.label_money = self.style(tk.Label(self.frame_player_info, text="Money/Debt: ", font=self.get_font("Helvetica", 12, bold=True)),
+                                      bg=background, fg=foreground)
+        self.label_money.grid(row=3, column=0, sticky=W)
+        self.text_money = self.style(tk.Label(self.frame_player_info, font=self.get_font("Helvetica", 12)),
+                                     bg=background, fg=foreground)
         self.text_money.grid(row=3, column=1, sticky=W)
-        self.label_level = self.style(tk.Label(self.frame_player_info, text="Difficulty Level: "),
-                                      bg="black", fg="white")
-        self.label_level.grid(row=4, column=0, sticky=E)
-        self.text_level = self.style(tk.Label(self.frame_player_info),
-                                     bg="black", fg="white")
-        self.text_level.grid(row=4, column=1, sticky=W)
-        self.label_accepted = self.style(tk.Label(self.frame_player_info, text="Has accepted challenge: "),
-                                         bg="black", fg="white")
-        self.label_accepted.grid(row=5, column=0, sticky=E)
-        self.text_accepted = self.style(tk.Label(self.frame_player_info),
-                                        bg="black", fg="white")
+        self.label_difficulty_level = self.style(tk.Label(self.frame_player_info, text="Difficulty Level: ", font=self.get_font("Helvetica", 12, bold=True)),
+                                                 bg=background, fg=foreground)
+        self.label_difficulty_level.grid(row=4, column=0, sticky=W)
+        self.text_difficulty_level = self.style(tk.Label(self.frame_player_info, font=self.get_font("Helvetica", 12)),
+                                                bg=background, fg=foreground)
+        self.text_difficulty_level.grid(row=4, column=1, sticky=W)
+        self.label_accepted = self.style(tk.Label(self.frame_player_info, text="Has accepted challenge: ", font=self.get_font("Helvetica", 12, bold=True)),
+                                         bg=background, fg=foreground)
+        self.label_accepted.grid(row=5, column=0, sticky=W)
+        self.text_accepted = self.style(tk.Label(self.frame_player_info, font=self.get_font("Helvetica", 12)),
+                                        bg=background, fg=foreground)
         self.text_accepted.grid(row=5, column=1, sticky=W)
         # Game Frame
-        self.frame_first_level = tk.Frame(self)
-        self.frame_first_level.grid(row=0, column=1, sticky=N + S + W + E)
-        self.label_first_level = tk.Label(self.frame_first_level, text="First Level")  # DEBUG
-        self.label_first_level.grid(row=0, column=0, sticky=W)
-        self.frame_second_level = tk.Frame(self)
-        self.frame_second_level.grid(row=1, column=1, sticky=N + S + W + E)
-        self.label_second_level = tk.Label(self.frame_second_level, text="Second Level")  # DEBUG
-        self.label_second_level.grid(row=0, column=0, sticky=W)
+        self.frame_first_level = tk.Frame(self.root, background=background)
+        self.frame_first_level.grid(row=0, column=1, ipadx=2, ipady=2, padx=2, pady=2, sticky=N + S + W + E)
+        self.canvas_first_level = self.style(tk.Canvas(self.frame_first_level, width=600, height=100), bg=background)
+        self.canvas_first_level.grid(row=0, column=0, sticky=N + S + W + E)
+        self.frame_second_level = tk.Frame(self.root, background=background)
+        self.frame_second_level.grid(row=1, column=1, ipadx=2, ipady=2, padx=2, pady=2, sticky=N + S + W + E)
+        self.canvas_second_level = self.style(tk.Canvas(self.frame_second_level, width=600, height=300), bg=background)
+        self.canvas_second_level.grid(row=0, column=0, sticky=N + S + W + E)
         # Label for describing states
-        self.frame_state_describe = tk.LabelFrame(parent, text="Current State Description", borderwidth=2, relief="groove",
-                                                  background="black", foreground="white")
+        self.frame_state_describe = self.style(tk.LabelFrame(self.root, text="Current State Description", borderwidth=2, relief="groove", font=self.get_font("Helvetica", 18, bold=True)),
+                                               bg=background, fg=foreground)
         self.frame_state_describe.grid(row=2, column=0, columnspan=2, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
-        self.label_state_describe = ttk.Label(self.frame_state_describe, background="black", foreground="white")
+        self.label_state_describe = self.style(tk.Label(self.frame_state_describe, font=self.get_font("Consolas", 12)), bg=background, fg=foreground)
         self.label_state_describe.grid(row=0, column=0, sticky=N + S + W + E)
         # List of all operators
         # set grid auto expand
         self.grid_auto_expand(parent, 3, 2, row_weights=[0, 1, 0], col_weights=[0, 1])
         self.grid_auto_expand(self.frame_player_info, 6, 2, row_weights=[0 for _ in range(6)], col_weights=[0, 0])
+
+    loaded_fonts = {}
+
+    @staticmethod
+    def get_font(name: str, size: int, bold: bool = False, italic: bool = False, underline: bool = False, overstrike: bool = False) -> "font.Font":
+        key = (name, size, bold, italic, underline, overstrike)
+        if key in StateDisplay.loaded_fonts:
+            return StateDisplay.loaded_fonts[key]
+        f = font.Font(family=name, size=size, weight="bold" if bold else "normal", slant="italic" if italic else "roman", underline=str(underline).lower(), overstrike=str(overstrike).lower())
+        StateDisplay.loaded_fonts[key] = f
+        return f
 
     @staticmethod
     def rgb2hex(r, g, b):
@@ -96,7 +109,7 @@ class StateDisplay(tk.Frame):
             w.configure(background=bg, foreground=fg)
         elif bg:
             w.configure(background=bg)
-        if fg:
+        elif fg:
             w.configure(foreground=fg)
         if hc and ht:
             w.configure(highlightcolor=hc, highlightbackground=hc, highlightthickness=ht)
@@ -132,9 +145,15 @@ def initialize_tk(width, height, title):
 
 class StateRenderer:
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        display.label_state_describe.configure(text=str(state))
+        display.label_state_describe.configure(text=state.describe_state())
         if state.player:
             display.canvas_energy.coords(display.rect_energy, 0, 0, state.player.energy, 20)
+            # display.canvas_energy.itemconfigure(display.text_energy, text=f"{state.player.energy:3}", fill="white" if state.player.energy < 30 else "black")
+            display.text_score.configure(text=f"{state.player.score}")
+            display.text_finished.configure(text=f"{state.player.finished}")
+            display.text_money.configure(text=f"${state.player.money}/${state.player.debt}")
+            display.text_difficulty_level.configure(text=f"{state.player.difficulty_level}")
+            display.text_accepted.configure(text=f"{'✔' if state.player.has_accepted_challenge() else '×'}")
 
     @staticmethod
     def get_renderer(state_type) -> 'StateRenderer':
@@ -189,7 +208,7 @@ StateRenderer.all = {
 
 
 def initialize_vis():
-    initialize_tk(width=600, height=300, title="InfoFlow")
+    initialize_tk(width=1200, height=800, title="InfoFlow")
 
 
 StateRenderer.last_state: 'State' = None
