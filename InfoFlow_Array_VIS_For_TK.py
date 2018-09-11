@@ -174,9 +174,9 @@ class StateRenderer:
         pass
 
     @staticmethod
-    def get_renderer(state_type, display) -> 'StateRenderer':
+    def get_renderer(state_type) -> 'StateRenderer':
         if state_type in StateRenderer.all:
-            return StateRenderer.all[state_type](display)
+            return StateRenderer.all[state_type]
         else:
             raise TypeError(state_type)
 
@@ -273,10 +273,10 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
 StateRenderer.all = {
     # TODO
-    GameStartState: lambda display: GameStartStateRenderer(),
-    ChallengeMenuState: lambda display: ChallengeMenuStateRenderer(),
-    MessageDisplayState: lambda display: MessageDisplayStateRenderer(),
-    NewsSortingChallengeState: lambda display: NewsSortingChallengeStateRenderer()
+    GameStartState: GameStartStateRenderer(),
+    ChallengeMenuState: ChallengeMenuStateRenderer(),
+    MessageDisplayState: MessageDisplayStateRenderer(),
+    NewsSortingChallengeState: NewsSortingChallengeStateRenderer()
 }
 
 
@@ -296,7 +296,7 @@ def render_state(state: 'State'):
     keep_render = True
 
     def render():
-        renderer = StateRenderer.get_renderer(type(state), show_state_array.STATE_WINDOW)
+        renderer = StateRenderer.get_renderer(type(state))
         renderer.init(show_state_array.STATE_WINDOW)
         if show_state_array.STATE_WINDOW:
             renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
