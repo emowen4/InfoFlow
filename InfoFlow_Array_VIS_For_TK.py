@@ -4,6 +4,9 @@ import tkinter as tk
 from tkinter import font
 from tkinter import N, S, W, E
 from typing import List
+import random
+import time
+from threading import Thread
 
 
 class StateDisplay(tk.Frame):
@@ -15,19 +18,19 @@ class StateDisplay(tk.Frame):
         # TODO
         # What our UI looks like
         # -------------------------------------
-        # |        |  1st Level   |           |
-        # | player |--------------|           |
-        # | stats  |     2nd      |   All     |
-        # |        |    Level     | Operators |
-        # |-----------------------|           |
-        # |     State Describe    |           |
+        # |        |              |           |
+        # | player |     Game     |    All    |
+        # | stats  |     View     | Operators |
+        # |        |              |           |
+        # |-----------------------------------|
+        # |           State Describe          |
         # -------------------------------------
         background, foreground = "black", "darkgray"
         self.style(self.root, bg=background)
         # Player Info
-        self.frame_player_info = self.style(tk.LabelFrame(self.root, text="Player Stats", borderwidth=2, relief="groove", font=self.get_font("Helvetica", 18, bold=True)),
+        self.frame_player_info = self.style(tk.LabelFrame(self.root, text=" Player Stats ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                             bg=background, fg=foreground)
-        self.frame_player_info.grid(row=0, column=0, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
+        self.frame_player_info.grid(row=0, column=0, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
         self.label_energy = self.style(tk.Label(self.frame_player_info, text="Energy: ", font=self.get_font("Helvetica", 12, bold=True)),
                                        bg=background, fg=foreground)
         self.label_energy.grid(row=0, column=0, sticky=W)
@@ -68,23 +71,25 @@ class StateDisplay(tk.Frame):
                                         bg=background, fg=foreground)
         self.text_accepted.grid(row=5, column=1, sticky=W)
         # Game Frame
-        self.frame_first_level = tk.Frame(self.root, background=background)
-        self.frame_first_level.grid(row=0, column=1, ipadx=2, ipady=2, padx=2, pady=2, sticky=N + S + W + E)
-        self.canvas_first_level = self.style(tk.Canvas(self.frame_first_level, width=600, height=100), bg=background)
-        self.canvas_first_level.grid(row=0, column=0, sticky=N + S + W + E)
-        self.frame_second_level = tk.Frame(self.root, background=background)
-        self.frame_second_level.grid(row=1, column=1, ipadx=2, ipady=2, padx=2, pady=2, sticky=N + S + W + E)
-        self.canvas_second_level = self.style(tk.Canvas(self.frame_second_level, width=600, height=300), bg=background)
-        self.canvas_second_level.grid(row=0, column=0, sticky=N + S + W + E)
+        self.frame_game = tk.LabelFrame(self.root, text=" Game View ", bg=background, fg=foreground, font=self.get_font("Chiller", 18, bold=True))
+        self.frame_game.grid(row=0, column=1, ipadx=2, ipady=2, padx=8, pady=12)
+        self.canvas_game = self.style(tk.Canvas(self.frame_game, width=600, height=400), bg=background, hc="black", ht=0)
+        self.canvas_game.grid(row=0, column=0)  # , sticky=N + S + W + E)
+        # Operators
+        self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
+                                          bg=background, fg=foreground)
+        self.frame_operators.grid(row=0, column=2, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
+        self.list_operators = self.style(tk.Listbox(self.frame_operators, width=20, font=self.get_font("Helvetica", 12)),
+                                         bg=background, fg=foreground, hc="black", ht=0, borderwidth=0, selectmode=tk.SINGLE)
+        self.list_operators.grid(row=0, column=0, padx=4, pady=4)
         # Label for describing states
-        self.frame_state_describe = self.style(tk.LabelFrame(self.root, text="Current State Description", borderwidth=2, relief="groove", font=self.get_font("Helvetica", 18, bold=True)),
+        self.frame_state_describe = self.style(tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                                bg=background, fg=foreground)
-        self.frame_state_describe.grid(row=2, column=0, columnspan=2, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
+        self.frame_state_describe.grid(row=1, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
         self.label_state_describe = self.style(tk.Label(self.frame_state_describe, font=self.get_font("Consolas", 12)), bg=background, fg=foreground)
         self.label_state_describe.grid(row=0, column=0, sticky=N + S + W + E)
-        # List of all operators
         # set grid auto expand
-        self.grid_auto_expand(parent, 3, 2, row_weights=[0, 1, 0], col_weights=[0, 1])
+        self.grid_auto_expand(parent, 2, 2, row_weights=[1, 3], col_weights=[0, 1, 0])
         self.grid_auto_expand(self.frame_player_info, 6, 2, row_weights=[0 for _ in range(6)], col_weights=[0, 0])
 
     loaded_fonts = {}
@@ -103,14 +108,8 @@ class StateDisplay(tk.Frame):
         return "#%02x%02x%02x" % (r, g, b)
 
     @staticmethod
-    def style(w, bg=None, fg=None, hc=None, ht=None, **options):
+    def style(w, hc=None, ht=None, **options):
         w.configure(**options)
-        if bg and fg:
-            w.configure(background=bg, foreground=fg)
-        elif bg:
-            w.configure(background=bg)
-        elif fg:
-            w.configure(foreground=fg)
         if hc and ht:
             w.configure(highlightcolor=hc, highlightbackground=hc, highlightthickness=ht)
         elif hc:
@@ -139,6 +138,7 @@ def initialize_tk(width, height, title):
     root.title(title)
     display = StateDisplay(root, width=width, height=height)
     # display.pack(fill="both", expand=True)
+    root.wm_minsize(1100, 760)
     show_state_array.STATE_WINDOW = display
     print("VIS initialization finished")
 
@@ -154,44 +154,96 @@ class StateRenderer:
             display.text_money.configure(text=f"${state.player.money}/${state.player.debt}")
             display.text_difficulty_level.configure(text=f"{state.player.difficulty_level}")
             display.text_accepted.configure(text=f"{'✔' if state.player.has_accepted_challenge() else '×'}")
+        global OPERATORS
+        display.list_operators.delete(0, tk.END)
+        if OPERATORS:
+            ops = [(ind, op) for ind, op in enumerate(OPERATORS) if state.is_applicable_operator(op)]
+            for ind, op in ops:
+                display.list_operators.insert(tk.END, f"{ind:2}: {op.name}")
+
+    def is_static(self):
+        return True
+
+    def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        pass
 
     @staticmethod
-    def get_renderer(state_type) -> 'StateRenderer':
+    def get_renderer(state_type, display) -> 'StateRenderer':
         if state_type in StateRenderer.all:
-            return StateRenderer.all[state_type]
+            return StateRenderer.all[state_type](display)
         else:
             raise TypeError(state_type)
 
 
-class SecondLevelStateRenderer(StateRenderer):
-    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        if last_state is not None:
-            StateRenderer.get_renderer(type(last_state)).render(display, last_state, None)
-        super().render(display, state, last_state)
-
-
 class GameStartStateRenderer(StateRenderer):
+    class Rain:
+        def __init__(self, content: List[str], x: int, y: int, speed: float, size: int, color: str):
+            self.text = "\n".join(content)
+            self.x = x
+            self.y = y
+            self.speed = speed
+            self.size = size
+            self.color = color
+
+        def is_disappeared(self):
+            return self.y > 400
+
+        @staticmethod
+        def random() -> 'GameStartStateRenderer.Rain':
+            return GameStartStateRenderer.Rain(random.choices(population=["0", "1"], k=random.randint(6, 18)),
+                                               random.randint(-10, 590), random.randint(-150, 0),
+                                               random.random() * 12 + 2, random.randint(4, 24), "white")
+
+    def __init__(self, display):
+        self.rains = [GameStartStateRenderer.Rain.random() for _ in range(15)]
+        self.text_rains = []
+        for r in self.rains:
+            self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.W, font=StateDisplay.get_font("Arial", r.size), text=r.text, fill=r.color))
+
+    def is_static(self):
+        return False
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        # TODO
-        pass
+
+    def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        for i in range(len(self.rains[:])):
+            r, t = self.rains[i], self.text_rains[i]
+            r.y += r.speed
+            display.canvas_game.move(t, 0, r.speed)
+            if r.is_disappeared():
+                self.rains.remove(r)
+                self.text_rains.remove(t)
+                nr = GameStartStateRenderer.Rain.random()
+                self.rains.append(nr)
+                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.W, font=StateDisplay.get_font("Arial", nr.size), text=nr.text, fill=nr.color))
+        display.root.update()
 
 
 class ChallengeMenuStateRenderer(StateRenderer):
+    def __init__(self, display):
+        pass
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         # TODO
         pass
 
 
-class MessageDisplayStateRenderer(SecondLevelStateRenderer):
+class MessageDisplayStateRenderer(StateRenderer):
+    def __init__(self, display):
+        pass
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         # TODO
         pass
 
 
-class NewsSortingChallengeStateRenderer(SecondLevelStateRenderer):
+class NewsSortingChallengeStateRenderer(StateRenderer):
+    def __init__(self, display):
+        pass
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         # TODO
@@ -200,10 +252,10 @@ class NewsSortingChallengeStateRenderer(SecondLevelStateRenderer):
 
 StateRenderer.all = {
     # TODO
-    GameStartState: GameStartStateRenderer(),
-    ChallengeMenuState: ChallengeMenuStateRenderer(),
-    MessageDisplayState: MessageDisplayStateRenderer(),
-    NewsSortingChallengeState: NewsSortingChallengeStateRenderer()
+    GameStartState: lambda display: GameStartStateRenderer(display),
+    ChallengeMenuState: lambda display: ChallengeMenuStateRenderer(display),
+    MessageDisplayState: lambda display: MessageDisplayStateRenderer(display),
+    NewsSortingChallengeState: lambda display: NewsSortingChallengeStateRenderer(display)
 }
 
 
@@ -213,8 +265,25 @@ def initialize_vis():
 
 StateRenderer.last_state: 'State' = None
 
+keep_render = True
+
 
 def render_state(state: 'State'):
     # print("In render_state, state is " + str(state))  # DEBUG ONLY
-    StateRenderer.get_renderer(type(state)).render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+    global keep_render
+    keep_render = False
+    time.sleep(0.5)
+    keep_render = True
+
+    def render():
+        renderer = StateRenderer.get_renderer(type(state), show_state_array.STATE_WINDOW)
+        renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+        if not renderer.is_static():
+            while keep_render:
+                renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                time.sleep(.05)
+
+    show_state_array.STATE_WINDOW.canvas_game.delete("all")
+    Thread(target=lambda: render()).start()
+    # StateRenderer.get_renderer(type(state)).render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
     StateRenderer.last_state = state
