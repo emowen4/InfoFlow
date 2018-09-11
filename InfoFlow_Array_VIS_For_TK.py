@@ -220,13 +220,14 @@ class GameStartStateRenderer(StateRenderer):
     def init(self, display):
         self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill="white")
         self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill="white")
-        self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill="black", font=StateDisplay.get_font("Gill Sans MT", 28, True))
+        self.font_title = StateDisplay.get_font("Gill Sans MT", 28, True, nocache=True)
+        self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill="black", font=self.font_title)
         self.rains = [GameStartStateRenderer.Rain.random() for _ in range(40)]
         self.text_rains = []
         for r in self.rains:
             self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", r.size), text=r.text, fill=r.color))
 
-    def is_static(self):
+    def is_static_renderer(self):
         return False
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -248,6 +249,24 @@ class GameStartStateRenderer(StateRenderer):
                 self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
         display.root.update()
 
+    def is_static_post_renderer(self):
+        return False
+
+    def post_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        self.offset_outer = [0, 0, 0, 0]
+        self.offset_inner = [0, 0, 0, 0]
+        self.offset_size_title = 0
+
+    def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        self.offset_outer = [i + 12 for i in self.offset_outer]
+        self.offset_inner = [i + 12 for i in self.offset_inner]
+        self.offset_size_title += 3
+        self.font_title.configure(size=28 + self.offset_size_title)
+        display.canvas_game.coords(self.rect_outer, 200 - self.offset_outer[0], 150 - self.offset_outer[1], 400 + self.offset_outer[2], 250 + self.offset_outer[3])
+        display.canvas_game.coords(self.rect_inner, 204 - self.offset_outer[0], 154 - self.offset_outer[1], 396 + self.offset_outer[2], 246 + self.offset_outer[3])
+        display.canvas_game.itemconfigure(self.text_title, font=self.font_title)
+        return False if self.offset_size_title >= 80 else True
+
 
 class ChallengeMenuStateRenderer(StateRenderer):
     def init(self, display):
@@ -268,8 +287,8 @@ class MessageDisplayStateRenderer(StateRenderer):
         display.canvas_game.create_oval(50, 50, 100, 100, fill="white")
         display.canvas_game.create_oval(54, 54, 96, 96, fill="black")
         display.canvas_game.create_text(75, 75, text="i", fill="white", font=StateDisplay.get_font("Impact", 28, bold=True))
-        display.canvas_game.create_text(120, 75, text=state.title, fill="white", font=StateDisplay.get_font("Times New Roman", 24, bold=True), anchor=tk.W)
-        display.canvas_game.create_text(50, 120, text=state.info, fill="white", font=StateDisplay.get_font("Times New Roman", 14), anchor=tk.W)
+        display.canvas_game.create_text(120, 75, text=state.title, fill="white", font=StateDisplay.get_font("Times New Roman", 24, bold=True), anchor=tk.W, width=400)
+        display.canvas_game.create_text(50, 120, text=state.info, fill="white", font=StateDisplay.get_font("Times New Roman", 14), anchor=tk.W, width=500)
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
