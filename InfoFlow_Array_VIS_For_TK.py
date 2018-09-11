@@ -187,11 +187,14 @@ class GameStartStateRenderer(StateRenderer):
             self.color = color
 
         def is_disappeared(self):
-            return self.x > 1000 or self.y < -1000
+            if self.speed > 0:
+                return self.x > 650
+            else:
+                return self.x < -300
 
         @staticmethod
         def random() -> 'GameStartStateRenderer.Rain':
-            x, speed = (random.randint(-800, -500), random.random() * 32 + 2) if random.randint(0, 1) is 0 else (random.randint(500, 800), -(random.random() * 32 + 2))
+            x, speed = (random.randint(-800, -500), random.random() * 32 + 2) if random.randint(0, 1) is 0 else (600 + random.randint(500, 800), -(random.random() * 32 + 2))
             return GameStartStateRenderer.Rain(content=random.choices(population=["0", "1"], k=random.randint(6, 18)),
                                                # x=random.randint(-10, 590), y=random.randint(-500, -300), speed=random.random() * 32 + 2,
                                                x=x, y=random.randint(-10, 390), speed=speed,
@@ -212,7 +215,7 @@ class GameStartStateRenderer(StateRenderer):
     def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         for i in range(len(self.rains[:])):
             r, t = self.rains[i], self.text_rains[i]
-            r.y += r.speed
+            r.x += r.speed
             if display:
                 display.canvas_game.move(t, r.speed, 0)
             if r.is_disappeared():
@@ -222,7 +225,7 @@ class GameStartStateRenderer(StateRenderer):
                 self.text_rains.remove(t)
                 nr = GameStartStateRenderer.Rain.random()
                 self.rains.append(nr)
-                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.W, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
+                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
         display.root.update()
 
 
