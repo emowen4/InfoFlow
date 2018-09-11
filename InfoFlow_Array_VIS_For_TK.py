@@ -195,13 +195,16 @@ class GameStartStateRenderer(StateRenderer):
         @staticmethod
         def random() -> 'GameStartStateRenderer.Rain':
             x, speed = (random.randint(-800, -500), random.random() * 32 + 2) if random.randint(0, 1) is 0 else (600 + random.randint(500, 800), -(random.random() * 32 + 2))
-            return GameStartStateRenderer.Rain(content=random.choices(population=["0", "1"], k=random.randint(6, 18)),
+            return GameStartStateRenderer.Rain(content=random.choices(population=["0", "1", "0", "1", "0", "1", "0", "1"], k=random.randint(6, 18)),
                                                # x=random.randint(-10, 590), y=random.randint(-500, -300), speed=random.random() * 32 + 2,
                                                x=x, y=random.randint(-10, 390), speed=speed,
                                                size=random.randint(4, 24), color="white")
 
     def __init__(self, display):
-        self.rains = [GameStartStateRenderer.Rain.random() for _ in range(24)]
+        self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill="white")
+        self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill="white")
+        self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill="black", font=StateDisplay.get_font("Gill Sans MT", 28, True))
+        self.rains = [GameStartStateRenderer.Rain.random() for _ in range(40)]
         self.text_rains = []
         for r in self.rains:
             self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", r.size), text=r.text, fill=r.color))
