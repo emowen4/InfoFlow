@@ -96,12 +96,13 @@ class StateDisplay(tk.Frame):
     loaded_fonts = {}
 
     @staticmethod
-    def get_font(name: str, size: int, bold: bool = False, italic: bool = False, underline: bool = False, overstrike: bool = False) -> "font.Font":
+    def get_font(name: str, size: int, bold: bool = False, italic: bool = False, underline: bool = False, overstrike: bool = False, nocache=False) -> "font.Font":
         key = (name, size, bold, italic, underline, overstrike)
         if key in StateDisplay.loaded_fonts:
             return StateDisplay.loaded_fonts[key]
         f = font.Font(family=name, size=size, weight="bold" if bold else "normal", slant="italic" if italic else "roman", underline=str(underline).lower(), overstrike=str(overstrike).lower())
-        StateDisplay.loaded_fonts[key] = f
+        if not nocache:
+            StateDisplay.loaded_fonts[key] = f
         return f
 
     @staticmethod
@@ -148,6 +149,9 @@ class StateRenderer:
     def init(self, display: 'StateDisplay'):
         pass
 
+    def is_static_renderer(self):
+        return True
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         display.label_state_describe.configure(text=state.describe_state())
         # Draw player stats
@@ -167,11 +171,18 @@ class StateRenderer:
             for ind, op in ops:
                 display.list_operators.insert(tk.END, f"{ind:2}: {op.name}")
 
-    def is_static(self):
-        return True
-
     def dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         pass
+
+    def is_static_post_renderer(self):
+        return True
+
+    def post_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        pass
+
+    def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State') -> bool:
+        # Return True if has more dynamic render; otherwise, return False
+        return False
 
     @staticmethod
     def get_renderer(state_type) -> 'StateRenderer':
@@ -285,27 +296,36 @@ def initialize_vis():
 
 
 StateRenderer.last_state: 'State' = None
-keep_render = True
+keep_render: bool = False
+renderer: 'StateRenderer' = None
 
 
 def render_state(state: 'State'):
     # print("In render_state, state is " + str(state))  # DEBUG ONLY
-    global keep_render
+    global keep_render, renderer
     keep_render = False
-    time.sleep(0.5)
-    keep_render = True
 
     def render():
+        global renderer
         renderer = StateRenderer.get_renderer(type(state))
         renderer.init(show_state_array.STATE_WINDOW)
         if show_state_array.STATE_WINDOW:
             renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
-        if not renderer.is_static():
+        if not renderer.is_static_renderer():
             while show_state_array.STATE_WINDOW and keep_render:
                 renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
                 time.sleep(.05)
 
+    if renderer:
+        if show_state_array.STATE_WINDOW:
+            renderer.post_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+        if not renderer.is_static_post_renderer():
+            keep_render = True
+            while show_state_array.STATE_WINDOW and keep_render:
+                keep_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                time.sleep(.05)
     show_state_array.STATE_WINDOW.canvas_game.delete("all")
+    keep_render = True
     Thread(target=lambda: render()).start()
     # StateRenderer.get_renderer(type(state)).render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
     StateRenderer.last_state = state
