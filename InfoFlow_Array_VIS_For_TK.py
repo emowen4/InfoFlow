@@ -74,13 +74,14 @@ class StateDisplay(tk.Frame):
         self.frame_game = tk.LabelFrame(self.root, text=" Game View ", bg=background, fg=foreground, font=self.get_font("Chiller", 18, bold=True))
         self.frame_game.grid(row=0, column=1, ipadx=2, ipady=2, padx=8, pady=12)
         self.canvas_game = self.style(tk.Canvas(self.frame_game, width=600, height=400), bg=background, hc="black", ht=0)
-        self.canvas_game.grid(row=0, column=0)  # , sticky=N + S + W + E)
+        self.canvas_game.grid(row=0, column=0)
         # Operators
         self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                           bg=background, fg=foreground)
         self.frame_operators.grid(row=0, column=2, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
         self.list_operators = self.style(tk.Listbox(self.frame_operators, width=20, font=self.get_font("Helvetica", 12)),
-                                         bg=background, fg=foreground, hc="black", ht=0, borderwidth=0, selectmode=tk.SINGLE)
+                                         bg=background, fg=foreground, hc="black", ht=0, borderwidth=0,
+                                         selectmode=tk.SINGLE, selectbackground="white", selectforeground="black")
         self.list_operators.grid(row=0, column=0, padx=4, pady=4)
         # Label for describing states
         self.frame_state_describe = self.style(tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
@@ -144,8 +145,12 @@ def initialize_tk(width, height, title):
 
 
 class StateRenderer:
+    def init(self, display: 'StateDisplay'):
+        pass
+
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         display.label_state_describe.configure(text=state.describe_state())
+        # Draw player stats
         if state.player:
             display.canvas_energy.coords(display.rect_energy, 0, 0, state.player.energy, 20)
             # display.canvas_energy.itemconfigure(display.text_energy, text=f"{state.player.energy:3}", fill="white" if state.player.energy < 30 else "black")
@@ -154,6 +159,7 @@ class StateRenderer:
             display.text_money.configure(text=f"${state.player.money}/${state.player.debt}")
             display.text_difficulty_level.configure(text=f"{state.player.difficulty_level}")
             display.text_accepted.configure(text=f"{'✔' if state.player.has_accepted_challenge() else '×'}")
+        # Draw available operators
         global OPERATORS
         display.list_operators.delete(0, tk.END)
         if OPERATORS:
@@ -200,7 +206,7 @@ class GameStartStateRenderer(StateRenderer):
                                                x=x, y=random.randint(-10, 390), speed=speed,
                                                size=random.randint(4, 24), color="white")
 
-    def __init__(self, display):
+    def init(self, display):
         self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill="white")
         self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill="white")
         self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill="black", font=StateDisplay.get_font("Gill Sans MT", 28, True))
@@ -233,7 +239,7 @@ class GameStartStateRenderer(StateRenderer):
 
 
 class ChallengeMenuStateRenderer(StateRenderer):
-    def __init__(self, display):
+    def init(self, display):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -243,7 +249,7 @@ class ChallengeMenuStateRenderer(StateRenderer):
 
 
 class MessageDisplayStateRenderer(StateRenderer):
-    def __init__(self, display):
+    def init(self, display):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -253,7 +259,7 @@ class MessageDisplayStateRenderer(StateRenderer):
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
-    def __init__(self, display):
+    def init(self, display):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -264,10 +270,10 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
 StateRenderer.all = {
     # TODO
-    GameStartState: lambda display: GameStartStateRenderer(display),
-    ChallengeMenuState: lambda display: ChallengeMenuStateRenderer(display),
-    MessageDisplayState: lambda display: MessageDisplayStateRenderer(display),
-    NewsSortingChallengeState: lambda display: NewsSortingChallengeStateRenderer(display)
+    GameStartState: lambda display: GameStartStateRenderer(),
+    ChallengeMenuState: lambda display: ChallengeMenuStateRenderer(),
+    MessageDisplayState: lambda display: MessageDisplayStateRenderer(),
+    NewsSortingChallengeState: lambda display: NewsSortingChallengeStateRenderer()
 }
 
 
@@ -276,7 +282,6 @@ def initialize_vis():
 
 
 StateRenderer.last_state: 'State' = None
-
 keep_render = True
 
 
@@ -289,6 +294,7 @@ def render_state(state: 'State'):
 
     def render():
         renderer = StateRenderer.get_renderer(type(state), show_state_array.STATE_WINDOW)
+        renderer.init(show_state_array.STATE_WINDOW)
         if show_state_array.STATE_WINDOW:
             renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
         if not renderer.is_static():
