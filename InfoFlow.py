@@ -176,7 +176,6 @@ class Challenge:
         p.difficulty_level += 1
 
     def set_unfinished(self, p: 'PlayerInfo'):
-        p.finished += 1
         p.difficulty_level -= 1
 
     def energy_consume(self):
@@ -553,7 +552,7 @@ class NewsSortingChallenge(Challenge):
 
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
-        count = int(level ** 1.5) + 10  # TODO Create an appropriate formula based on the level
+        count = round(level ** 1.5) + 5  # TODO Create an appropriate formula based on the level
         # count = 1  # DEBUG
         to_sort = set()
         while len(to_sort) < count:
@@ -631,7 +630,7 @@ OPERATORS = Operator.all_ops + list(chain.from_iterable([ch.provided_ops for _, 
 # </OPERATORS>
 
 # <GOAL_TEST> (optional)
-GOAL_TEST = lambda s: goal_test(s)
+GOAL_TEST = goal_test
 # </GOAL_TEST>
 
 # <GOAL_MESSAGE_FUNCTION> (optional)
