@@ -207,6 +207,7 @@ class State:
         return op.id is OperatorIds.FINISH_ROUND or op.id is OperatorIds.PAY_DEBT
 
     def apply_operator(self, op: 'Operator') -> 'State':
+        self.store_operator(op)
         ns = copy_state(self)
         if op.id is OperatorIds.FINISH_ROUND:
             ns.round += 1
@@ -295,6 +296,7 @@ class GameStartState(State):
         return op.id is OperatorIds.MENU_CONTINUE
 
     def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
         return ChallengeMenuState(self)
 
     def describe_state(self) -> str:
@@ -321,6 +323,7 @@ class ChallengeMenuState(State):
                          or op.id is OperatorIds.CHALLENGE_DECINE)))
 
     def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
         if op.id is OperatorIds.CHALLENGE_ACCEPT:
@@ -371,6 +374,7 @@ class MessageDisplayState(State):
         return op.id is OperatorIds.MENU_CONTINUE
 
     def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
         return self.continue_to
 
     def describe_state(self) -> str:
@@ -569,6 +573,7 @@ class NewsSortingChallengeState(ChallengeState):
         return super().is_applicable_operator(op) or op.id in self.player.current_challenge.categories
 
     def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
         if self.news_index + 1 < len(self.player.current_challenge.to_sort):
