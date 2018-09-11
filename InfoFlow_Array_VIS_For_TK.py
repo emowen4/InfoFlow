@@ -254,8 +254,11 @@ class MessageDisplayStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        # TODO
-        pass
+        display.canvas_game.create_oval(50, 50, 100, 100, fill="white")
+        display.canvas_game.create_oval(54, 54, 96, 96, fill="black")
+        display.canvas_game.create_text(75, 75, text="i", fill="white", font=StateDisplay.get_font("Impact", 28, bold=True))
+        display.canvas_game.create_text(120, 75, text=state.title, fill="white", font=StateDisplay.get_font("Times New Roman", 24, bold=True), anchor=tk.W)
+        display.canvas_game.create_text(50, 120, text=state.info, fill="white", font=StateDisplay.get_font("Times New Roman", 14), anchor=tk.W)
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
