@@ -64,7 +64,7 @@ class PlayerInfo:
 
     @difficulty_level.setter
     def difficulty_level(self, val):
-        self._difficulty_level = 0 if val < 0 else 5 if val > 5 else val
+        self._difficulty_level = 0 if val < 0 else 4 if val > 4 else val
 
     @property
     def energy(self):
@@ -146,7 +146,7 @@ Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
 
 
 class Challenge:
-    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5
+    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5 (inclusive)
     reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
     score_correct_multiplier_level = 100
     score_cancel_multiplier_level = -100
@@ -514,7 +514,6 @@ class NewsSortingChallenge(Challenge):
 
     def __init__(self, level: int, to_sort: List[NewsInformation], categories: List[str] = None, sorted: Dict[str, List[NewsInformation]] = None):
         super().__init__("News Sorting Challenge", level)
-        self.level = level
         self.to_sort = to_sort
         self.categories = deepcopy(categories) if categories else list(set([info.category for info in to_sort]))
         self.categories.sort()
@@ -598,11 +597,124 @@ class NewsSortingChallengeState(ChallengeState):
         return f"{super().__str__()}\n{self.describe_state()}"
 
 
+class Myth:
+    def __init__(self, content: str, is_fact: bool):
+        self.content = content
+        self.is_fact = is_fact
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return isinstance(other, type(self)) and self.content == other.content and self.is_fact == other.is_fact
+
+    def __hash__(self):
+        return hash(f"{self.content}:{self.is_fact}")
+
+    def __str__(self):
+        return self.content
+
+
+class MythBusterChallenge(Challenge):
+    provided_ops = [Operator("Is Fact", "MYTHBUSTER_FACT"), Operator("Is Myth", "MYTHBUSTER_MYTH")]
+    all_myths = [
+        Myth("Glass Is a Slow-moving Liquid.", False),
+        Myth("Deoxygenated Blood Is Blue.", False)
+    ]
+    level_correct_required = [.66, .72, .78, .84, .9]
+
+    def __init__(self, level: int, myths: 'List[Myth]', guesses: 'Dict[Myth, bool]'):
+        super().__init__("Myth Buster Challenge", level)
+        self.myths = myths
+        # Guess = True if the player think it is a fact; otherwise, should be False
+        self.guesses = guesses
+
+    def guess(self, myth: 'Myth', guess: bool):
+        self.guesses[myth] = guess
+        return myth.is_fact == guess
+
+    def submit(self, p: 'PlayerInfo'):
+        correct = 0
+        for myth, guess in self.guesses.items():
+            if myth.is_fact == guess:
+                correct += 1
+        correct_level = correct / len(self.myths)
+        if correct_level >= self.level_correct_required[self.level]:  # Require at least a specific amount of the information are sorted correctly to get success in this challenge
+            p.score += self.level * Challenge.score_correct_multiplier_level
+            p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
+            self.set_finished(p)
+            return True, correct_level
+        else:
+            self.set_unfinished(p)
+            return False, correct_level
+
+    def clone(self):
+        return MythBusterChallenge(self.level, deepcopy(self.myths), deepcopy(self.guesses))
+
+    @staticmethod
+    def random(level):
+        count = level + 10
+        myths = set()
+        while len(myths) < count:
+            myths.add(choice(MythBusterChallenge.all_myths))
+        return MythBusterChallenge(level, list(myths), {})
+
+
+class MythBusterChallengeState(ChallengeState):
+    def __init__(self, old: 'State' = None):
+        super().__init__(old)
+        self.news_index = old.news_index + 1 if old and isinstance(old, MythBusterChallengeState) else 0
+
+    def is_applicable_operator(self, op: 'Operator'):
+        return super().is_applicable_operator(op) or op in MythBusterChallenge.provided_ops
+
+    def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
+        if super().is_applicable_operator(op):
+            return super().apply_operator(op)
+        if self.news_index + 1 < len(self.player.current_challenge.myths):
+            ns = MythBusterChallengeState(self)
+            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.news_index], op.id is MythBusterChallenge.provided_ops[0].id)
+            if self.player.current_challenge.myths[self.news_index].is_fact:
+                info = "It is a truth!" if ret else "It is a myth!"
+            else:
+                info = "It is a myth!" if ret else "It is a truth!"
+            return MessageDisplayState(ns, "Correct!" if ret else "Incorrect!", info)
+        else:
+            ns = ChallengeMenuState(self)
+            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.news_index], op.id is MythBusterChallenge.provided_ops[0].id)
+            passed, corr = ns.player.current_challenge.submit(ns.player)
+            ns.finish_challenge()
+            if self.player.current_challenge.myths[self.news_index].is_fact:
+                info = "It is a truth!" if ret else "It is a myth!"
+            else:
+                info = "It is a myth!" if ret else "It is a truth!"
+            if passed:
+                return MessageDisplayState(
+                    MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=self),
+                    "Correct!" if ret else "Incorrect!", info
+                )
+            else:
+                return MessageDisplayState(
+                    MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.", old=self),
+                    "Correct!" if ret else "Incorrect!", info
+                )
+
+    def describe_state(self) -> str:
+        return (f"Myth's Content: {self.player.current_challenge.myths[self.news_index]}"
+                f"\t(Myth Guessed: {self.news_index}/{len(self.player.current_challenge.myths)})\nFACT or MYTH?")
+
+    def __str__(self):
+        return f"{super().__str__()}\n{self.describe_state()}"
+
+
 class Challenges:
     all = [
         (lambda level: NewsSortingChallenge.random(level),
          lambda old: NewsSortingChallengeState(old=old),
-         NewsSortingChallenge)
+         NewsSortingChallenge),
+        (lambda level: MythBusterChallenge.random(level),
+         lambda old: MythBusterChallengeState(old=old),
+         MythBusterChallenge)
     ]
 
 
