@@ -22,7 +22,7 @@ including privacy, will be released to this platform. It offers a variety of tas
 Some of those challenges are complicated, ranging from physical work to careful thinking.
 ------------------------------------------------------------------------------------------------------------------------
     You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
-your father owes them a huge amount of money ($10000) in gambling. You have decided to drop school and pay off the debt. 
+your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt. 
 You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time, 
 you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
 to pay off your debt.  Today, you will be facing your first challenge from this platform. What will that be...?'''
