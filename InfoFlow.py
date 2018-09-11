@@ -212,7 +212,7 @@ class State:
         if op.id is OperatorIds.FINISH_ROUND:
             ns.round += 1
             ns.player.energy += 80  # Recover 80% of total energy after each round
-            ns.player.debt = int(ns.player.debt * 1.005)  # Add 0.5% debt according to the remaining debt after each round
+            ns.player.debt = int(ns.player.debt * 1.03)  # Add 3% debt according to the remaining debt after each round
         elif op.id is OperatorIds.PAY_DEBT:
             if not ns.player.is_game_finished:
                 if ns.player.money > 0:

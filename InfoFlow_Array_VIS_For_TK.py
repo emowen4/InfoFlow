@@ -79,7 +79,7 @@ class StateDisplay(tk.Frame):
         self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                           bg=background, fg=foreground)
         self.frame_operators.grid(row=0, column=2, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
-        self.list_operators = self.style(tk.Listbox(self.frame_operators, width=20, font=self.get_font("Helvetica", 12)),
+        self.list_operators = self.style(tk.Listbox(self.frame_operators, width=20, font=self.get_font("Helvetica", 14)),
                                          bg=background, fg=foreground, hc="black", ht=0, borderwidth=0,
                                          selectmode=tk.SINGLE, selectbackground="white", selectforeground="black")
         self.list_operators.grid(row=0, column=0, padx=4, pady=4)
@@ -278,8 +278,7 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        # TODO
-        pass
+        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill="dark gray", font=StateDisplay.get_font("Helvetica", 20), width = 550)
 
 
 StateRenderer.all = {
