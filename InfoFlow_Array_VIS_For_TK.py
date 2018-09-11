@@ -15,9 +15,10 @@ class StateDisplay(tk.Frame):
         self.root = parent
         self.width = width
         self.height = height
-        # TODO
         # What our UI looks like
         # -------------------------------------
+        # |        |     Round    |           |
+        # |        |--------------|           |
         # |        |              |           |
         # | player |     Game     |    All    |
         # | stats  |     View     | Operators |
@@ -30,7 +31,7 @@ class StateDisplay(tk.Frame):
         # Player Info
         self.frame_player_info = self.style(tk.LabelFrame(self.root, text=" Player Stats ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                             bg=background, fg=foreground)
-        self.frame_player_info.grid(row=0, column=0, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
+        self.frame_player_info.grid(row=0, column=0, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
         self.label_energy = self.style(tk.Label(self.frame_player_info, text="Energy: ", font=self.get_font("Helvetica", 12, bold=True)),
                                        bg=background, fg=foreground)
         self.label_energy.grid(row=0, column=0, sticky=W)
@@ -71,14 +72,16 @@ class StateDisplay(tk.Frame):
                                         bg=background, fg=foreground)
         self.text_accepted.grid(row=5, column=1, sticky=W)
         # Game Frame
+        self.label_round = self.style(tk.Label(self.root, text="\nRound Beginning"), bg=background, fg=foreground, font=self.get_font("Algerian", 12))
+        self.label_round.grid(row=0, column=1, padx=4, pady=4, sticky=N + S + W + E)
         self.frame_game = tk.LabelFrame(self.root, text=" Game View ", bg=background, fg=foreground, font=self.get_font("Chiller", 18, bold=True))
-        self.frame_game.grid(row=0, column=1, ipadx=2, ipady=2, padx=8, pady=12)
+        self.frame_game.grid(row=1, column=1, ipadx=2, ipady=2, padx=8, pady=12)
         self.canvas_game = self.style(tk.Canvas(self.frame_game, width=600, height=400), bg=background, hc="black", ht=0)
         self.canvas_game.grid(row=0, column=0)
         # Operators
         self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                           bg=background, fg=foreground)
-        self.frame_operators.grid(row=0, column=2, rowspan=1, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
+        self.frame_operators.grid(row=0, column=2, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
         self.list_operators = self.style(tk.Listbox(self.frame_operators, width=30, font=self.get_font("Helvetica", 14)),
                                          bg=background, fg=foreground, hc="black", ht=0, borderwidth=0,
                                          selectmode=tk.SINGLE, selectbackground="white", selectforeground="black")
@@ -86,11 +89,11 @@ class StateDisplay(tk.Frame):
         # Label for describing states
         self.frame_state_describe = self.style(tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
                                                bg=background, fg=foreground)
-        self.frame_state_describe.grid(row=1, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
+        self.frame_state_describe.grid(row=2, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
         self.label_state_describe = self.style(tk.Label(self.frame_state_describe, font=self.get_font("Consolas", 12)), bg=background, fg=foreground)
         self.label_state_describe.grid(row=0, column=0, sticky=N + S + W + E)
         # set grid auto expand
-        self.grid_auto_expand(parent, 2, 2, row_weights=[1, 3], col_weights=[0, 1, 0])
+        self.grid_auto_expand(parent, 2, 2, row_weights=[0, 0, 1], col_weights=[0, 1, 0])
         self.grid_auto_expand(self.frame_player_info, 6, 2, row_weights=[0 for _ in range(6)], col_weights=[0, 0])
 
     loaded_fonts = {}
@@ -139,8 +142,7 @@ def initialize_tk(width, height, title):
     root = tk.Tk()
     root.title(title)
     display = StateDisplay(root, width=width, height=height)
-    # display.pack(fill="both", expand=True)
-    root.wm_minsize(1100, 760)
+    root.minsize(1100, 590)
     show_state_array.STATE_WINDOW = display
     print("VIS initialization finished")
 
@@ -163,6 +165,8 @@ class StateRenderer:
             display.text_money.configure(text=f"${state.player.money}/${state.player.debt}")
             display.text_difficulty_level.configure(text=f"{state.player.difficulty_level}")
             display.text_accepted.configure(text=f"{'✔' if state.player.has_accepted_challenge() else '×'}")
+        # Update round information
+        display.label_round.configure(text=f"\nRound {state.round}")
         # Draw available operators
         global OPERATORS
         display.list_operators.delete(0, tk.END)
@@ -287,8 +291,8 @@ class MessageDisplayStateRenderer(StateRenderer):
         display.canvas_game.create_oval(50, 50, 100, 100, fill="white")
         display.canvas_game.create_oval(54, 54, 96, 96, fill="black")
         display.canvas_game.create_text(75, 75, text="i", fill="white", font=StateDisplay.get_font("Impact", 28, bold=True))
-        display.canvas_game.create_text(120, 75, text=state.title, fill="white", font=StateDisplay.get_font("Times New Roman", 24, bold=True), anchor=tk.W, width=400)
-        display.canvas_game.create_text(50, 120, text=state.info, fill="white", font=StateDisplay.get_font("Times New Roman", 14), anchor=tk.W, width=500)
+        display.canvas_game.create_text(120, 75, text=state.title, fill="white", font=StateDisplay.get_font("Helvetica", 24, bold=True), anchor=tk.W, width=400)
+        display.canvas_game.create_text(50, 120, text=state.info, fill="white", font=StateDisplay.get_font("Helvetica", 14), anchor=tk.W, width=500)
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
