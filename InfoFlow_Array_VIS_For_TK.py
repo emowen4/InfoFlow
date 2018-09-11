@@ -186,19 +186,19 @@ class GameStartStateRenderer(StateRenderer):
             self.color = color
 
         def is_disappeared(self):
-            return self.y > 400
+            return self.y > 1000
 
         @staticmethod
         def random() -> 'GameStartStateRenderer.Rain':
             return GameStartStateRenderer.Rain(random.choices(population=["0", "1"], k=random.randint(6, 18)),
-                                               random.randint(-10, 590), random.randint(-150, 0),
-                                               random.random() * 12 + 2, random.randint(4, 24), "white")
+                                               random.randint(-10, 590), random.randint(-500, -300),
+                                               random.random() * 32 + 2, random.randint(4, 24), "white")
 
     def __init__(self, display):
-        self.rains = [GameStartStateRenderer.Rain.random() for _ in range(15)]
+        self.rains = [GameStartStateRenderer.Rain.random() for _ in range(24)]
         self.text_rains = []
         for r in self.rains:
-            self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.W, font=StateDisplay.get_font("Arial", r.size), text=r.text, fill=r.color))
+            self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.N, font=StateDisplay.get_font("Arial", r.size), text=r.text, fill=r.color))
 
     def is_static(self):
         return False
@@ -210,13 +210,16 @@ class GameStartStateRenderer(StateRenderer):
         for i in range(len(self.rains[:])):
             r, t = self.rains[i], self.text_rains[i]
             r.y += r.speed
-            display.canvas_game.move(t, 0, r.speed)
+            if display:
+                display.canvas_game.move(t, 0, r.speed)
             if r.is_disappeared():
+                if display:
+                    display.canvas_game.delete(t)
                 self.rains.remove(r)
                 self.text_rains.remove(t)
                 nr = GameStartStateRenderer.Rain.random()
                 self.rains.append(nr)
-                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.W, font=StateDisplay.get_font("Arial", nr.size), text=nr.text, fill=nr.color))
+                self.text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.W, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
         display.root.update()
 
 
@@ -277,9 +280,10 @@ def render_state(state: 'State'):
 
     def render():
         renderer = StateRenderer.get_renderer(type(state), show_state_array.STATE_WINDOW)
-        renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+        if show_state_array.STATE_WINDOW:
+            renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
         if not renderer.is_static():
-            while keep_render:
+            while show_state_array.STATE_WINDOW and keep_render:
                 renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
                 time.sleep(.05)
 
