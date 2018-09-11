@@ -366,7 +366,7 @@ class MythBusterChallengeStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.myths[state.news_index]}", fill=StateDisplay.foreground,
+        display.canvas_game.create_text(300, 200, text=f"Statement: {state.player.current_challenge.myths[state.news_index]}", fill=StateDisplay.foreground,
                                         font=StateDisplay.get_font(StateDisplay.default_font_name, 20), width=550)
 
 
