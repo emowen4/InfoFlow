@@ -258,14 +258,14 @@ class GameStartStateRenderer(StateRenderer):
         self.offset_size_title = 0
 
     def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        self.offset_outer = [i + 12 for i in self.offset_outer]
-        self.offset_inner = [i + 12 for i in self.offset_inner]
-        self.offset_size_title += 3
+        self.offset_outer = [i + 18 for i in self.offset_outer]
+        self.offset_inner = [i + 18 for i in self.offset_inner]
+        self.offset_size_title += 5
         self.font_title.configure(size=28 + self.offset_size_title)
         display.canvas_game.coords(self.rect_outer, 200 - self.offset_outer[0], 150 - self.offset_outer[1], 400 + self.offset_outer[2], 250 + self.offset_outer[3])
         display.canvas_game.coords(self.rect_inner, 204 - self.offset_outer[0], 154 - self.offset_outer[1], 396 + self.offset_outer[2], 246 + self.offset_outer[3])
         display.canvas_game.itemconfigure(self.text_title, font=self.font_title)
-        return False if self.offset_size_title >= 80 else True
+        return False if self.offset_size_title >= 60 else True
 
 
 class ChallengeMenuStateRenderer(StateRenderer):
@@ -297,7 +297,7 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill="dark gray", font=StateDisplay.get_font("Helvetica", 20), width = 550)
+        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill="dark gray", font=StateDisplay.get_font("Helvetica", 20), width=550)
 
 
 StateRenderer.all = {
@@ -316,34 +316,41 @@ def initialize_vis():
 StateRenderer.last_state: 'State' = None
 keep_render: bool = False
 renderer: 'StateRenderer' = None
+in_render_state = False
 
 
 def render_state(state: 'State'):
     # print("In render_state, state is " + str(state))  # DEBUG ONLY
+    global in_render_state
+    while in_render_state:
+        time.sleep(0.1)
+    in_render_state = True
     global keep_render, renderer
     keep_render = False
-
-    def render():
-        global renderer
-        renderer = StateRenderer.get_renderer(type(state))
-        renderer.init(show_state_array.STATE_WINDOW)
-        if show_state_array.STATE_WINDOW:
-            renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
-        if not renderer.is_static_renderer():
-            while show_state_array.STATE_WINDOW and keep_render:
-                renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
-                time.sleep(.05)
-
-    if renderer:
+    if StateRenderer.last_state and renderer:
         if show_state_array.STATE_WINDOW:
             renderer.post_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
-        if not renderer.is_static_post_renderer():
-            keep_render = True
-            while show_state_array.STATE_WINDOW and keep_render:
-                keep_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
-                time.sleep(.05)
+            if not renderer.is_static_post_renderer():
+                keep_render = True
+                while show_state_array.STATE_WINDOW and keep_render:
+                    keep_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                    time.sleep(.05)
+
     show_state_array.STATE_WINDOW.canvas_game.delete("all")
     keep_render = True
+
+    def render():
+        global in_render_state, renderer
+        renderer = StateRenderer.get_renderer(type(state))
+        renderer.init(show_state_array.STATE_WINDOW)
+        in_render_state = False
+        if show_state_array.STATE_WINDOW:
+            renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+            if not renderer.is_static_renderer():
+                while show_state_array.STATE_WINDOW and keep_render:
+                    renderer.dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
+                    time.sleep(.05)
+
     Thread(target=lambda: render()).start()
     # StateRenderer.get_renderer(type(state)).render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
     StateRenderer.last_state = state
