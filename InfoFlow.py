@@ -38,7 +38,7 @@ from typing import List, Dict
 
 
 class Debug:
-    debug = True  # DEBUG
+    debug = False  # DEBUG
 
 
 class PlayerInfo:
@@ -46,7 +46,7 @@ class PlayerInfo:
                  score: int = 0,
                  finished: int = 0,
                  money: int = 0,
-                 debt: int = 1000 if not Debug.debug else 10,
+                 debt: int = 1000 if not Debug.debug else 100,
                  # debt: int = 100,  # DEBUG
                  energy: int = 100,
                  current_challenge: 'Challenge' = None,
@@ -364,16 +364,10 @@ class ChallengeState(State):
 class MessageDisplayState(State):
     def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, show_icon: bool = True, old: 'State' = None):
         super().__init__(old)
-        if isinstance(old, MessageDisplayState):
-            self.continue_to = old.continue_to
-            self.title = old.title
-            self.info = old.info
-            self.show_icon = old.show_icon
-        else:
-            self.continue_to = continue_to
-            self.title = title
-            self.info = info
-            self.show_icon = show_icon
+        self.continue_to = continue_to
+        self.title = title
+        self.info = info
+        self.show_icon = show_icon
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -397,8 +391,8 @@ class MessageDisplayState(State):
         return MessageDisplayState.show_message(self, title, info, show_icon)
 
     @staticmethod
-    def show_message(continue_to: 'State', title: str = None, info: str = None, show_icon: bool = True):
-        return MessageDisplayState(continue_to, title, info, show_icon, old=continue_to)
+    def show_message(continue_to: 'State', title: str = None, info: str = None, show_icon: bool = True, old: 'State' = None):
+        return MessageDisplayState(continue_to, title, info, show_icon, old=old if old else continue_to)
 
 
 class NewsInformation:
