@@ -37,12 +37,16 @@ from random import choice
 from typing import List, Dict
 
 
+class Debug:
+    debug = True  # DEBUG
+
+
 class PlayerInfo:
     def __init__(self, difficulty_level: int = 0,
                  score: int = 0,
                  finished: int = 0,
                  money: int = 0,
-                 debt: int = 1000,
+                 debt: int = 1000 if not Debug.debug else 10,
                  # debt: int = 100,  # DEBUG
                  energy: int = 100,
                  current_challenge: 'Challenge' = None,
@@ -146,7 +150,7 @@ Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
 
 
 class Challenge:
-    challenge_rewards = [100, 300, 500, 1000, 1500]  # from 0 to 5 (inclusive)
+    challenge_rewards = [100, 200, 300, 4000, 500]  # from 0 to 5 (inclusive)
     reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
     score_correct_multiplier_level = 100
     score_cancel_multiplier_level = -100
@@ -179,7 +183,7 @@ class Challenge:
         p.difficulty_level -= 1
 
     def energy_consume(self):
-        return (self.level + 2) * Challenge.energy_accept_multiplier_level
+        return (self.level + 5) * Challenge.energy_accept_multiplier_level
 
     def preview(self) -> str:
         return f"{self.name}(Level: {self.level + 1})"
@@ -219,11 +223,11 @@ class State:
                     to_pay = min(ns.player.debt, ns.player.money)
                     ns.player.debt -= to_pay
                     ns.player.money -= to_pay
-                    return MessageDisplayState(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.", old=self)
+                    return MessageDisplayState.show_message(ns.check_win_lose_state(), "Great!", f"${to_pay} is paid off your debt.")
                 else:
-                    return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!", old=self)
+                    return MessageDisplayState.show_message(ns.check_win_lose_state(), "Failed!", "You don't have any money to pay off your debt!")
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!", old=self)
+                return MessageDisplayState.show_message(ns.check_win_lose_state(), "Failed!", "You have already paid all the debt!")
         return ns.check_win_lose_state()
 
     def store_operator(self, op: 'Operator'):
@@ -246,8 +250,7 @@ class State:
         if not self.player.is_game_finished and self.__is_goal():
             ns = ChallengeMenuState(self)
             ns.player.set_game_finished = True
-            # return MessageDisplayState(ChallengeMenuState(self), "Congratulations!", self.goal_message())
-            return ns
+            return MessageDisplayState(ns, "Congratulations!", self.goal_message())
         return self
 
     def __is_goal(self) -> bool:
@@ -359,16 +362,18 @@ class ChallengeState(State):
 
 
 class MessageDisplayState(State):
-    def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, old: 'State' = None):
+    def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, show_icon: bool = True, old: 'State' = None):
         super().__init__(old)
         if isinstance(old, MessageDisplayState):
             self.continue_to = old.continue_to
             self.title = old.title
             self.info = old.info
+            self.show_icon = old.show_icon
         else:
             self.continue_to = continue_to
             self.title = title
             self.info = info
+            self.show_icon = show_icon
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -382,6 +387,18 @@ class MessageDisplayState(State):
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
+
+    def more(self, title: str = None, info: str = None, show_icon: bool = True):
+        m = MessageDisplayState.show_message(self.continue_to, title, info, show_icon)
+        self.continue_to = m
+        return self
+
+    def before(self, title: str = None, info: str = None, show_icon: bool = True):
+        return MessageDisplayState.show_message(self, title, info, show_icon)
+
+    @staticmethod
+    def show_message(continue_to: 'State', title: str = None, info: str = None, show_icon: bool = True):
+        return MessageDisplayState(continue_to, title, info, show_icon, old=continue_to)
 
 
 class NewsInformation:
@@ -555,8 +572,7 @@ class NewsSortingChallenge(Challenge):
 
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
-        count = round(level ** 1.5) + 5  # TODO Create an appropriate formula based on the level
-        # count = 1  # DEBUG
+        count = round(level ** 1.5) + 5 if not Debug.debug else 1
         to_sort = set()
         while len(to_sort) < count:
             to_sort.add(choice(NewsSortingChallenge.news_collection))
@@ -584,10 +600,16 @@ class NewsSortingChallengeState(ChallengeState):
             ns.player.current_challenge.sort_to(self.player.current_challenge.to_sort[self.news_index], op.id)
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
+            philosophy = """Here is why we made this challenge.
+Just like what system did for spam emails, we receive useless information every day in our lives. Just imagine, our brain reach about 34 Gigabyte of information while most of them is spam. 
+Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
+This challenge is a representation about ‘Volume’ in Big Data."""
             if passed:
-                return MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=self)
+                return (MessageDisplayState.show_message(ns, "", philosophy)
+                        .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
             else:
-                return MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.", old=self)
+                return (MessageDisplayState.show_message(ns, "", philosophy)
+                        .before("Nice try!", f"You only have a {int(corr * 100)}% completion."))
 
     def describe_state(self) -> str:
         return (f"News: {self.player.current_challenge.to_sort[self.news_index]}"
@@ -716,7 +738,9 @@ class MythBusterChallenge(Challenge):
         Myth("A hardboiled egg will spin, but a soft-boiled egg will not.", True),
         Myth("Avocados are poisonous to birds.", True),
         Myth("Chewing gum burns about 1calories per hour.", True),
-        Myth("The number of animals killed for meat every hour in the U. is 500,000.If you try to suppress a sneeze, you can rupture a blood vessel in your head or neck and die.Celery has negative calories! It takes more calories to eat a piece of celery than the celery has in it to begin wit It’s the same with apples!More people are allergic to cow’s milk than any other food.Only 8% of dieters will follow a restrictive weight loss plan (such as hCG Drops diet, garcinia cambogia diet, etc.),Coconut water can be used as blood plasma.", True),
+        Myth(
+            "The number of animals killed for meat every hour in the U. is 500,000.If you try to suppress a sneeze, you can rupture a blood vessel in your head or neck and die.Celery has negative calories! It takes more calories to eat a piece of celery than the celery has in it to begin wit It’s the same with apples!More people are allergic to cow’s milk than any other food.Only 8% of dieters will follow a restrictive weight loss plan (such as hCG Drops diet, garcinia cambogia diet, etc.),Coconut water can be used as blood plasma.",
+            True),
         Myth("Human thigh bones are stronger than concrete.", True),
         Myth("Cockroaches can live for several weeks with their heads cut off, because their brains are located inside their bod They would eventually die from being unable to eat.", True),
         Myth("Scientists have tracked butterflies that travel over 3,000 miles.", True),
@@ -734,7 +758,10 @@ class MythBusterChallenge(Challenge):
         Myth("The elephant is the only mammal that can’t jump!", True),
         Myth("Most dust particles in your house are made from dead skin!", True)
     ]
+
     level_correct_required = [.66, .72, .78, .84, .9]
+    score_correct_guess = 10
+    score_incorrect_guess = -20
 
     def __init__(self, level: int, myths: 'List[Myth]', guesses: 'Dict[Myth, bool]'):
         super().__init__("Myth Buster Challenge", level)
@@ -766,7 +793,7 @@ class MythBusterChallenge(Challenge):
 
     @staticmethod
     def random(level):
-        count = level + 10
+        count = level + 10 if not Debug.debug else 1
         myths = set()
         while len(myths) < count:
             myths.add(choice(MythBusterChallenge.all_myths))
@@ -776,7 +803,7 @@ class MythBusterChallenge(Challenge):
 class MythBusterChallengeState(ChallengeState):
     def __init__(self, old: 'State' = None):
         super().__init__(old)
-        self.news_index = old.news_index + 1 if old and isinstance(old, MythBusterChallengeState) else 0
+        self.myth_index = old.myth_index + 1 if old and isinstance(old, MythBusterChallengeState) else 0
 
     def is_applicable_operator(self, op: 'Operator'):
         return super().is_applicable_operator(op) or op in MythBusterChallenge.provided_ops
@@ -785,37 +812,38 @@ class MythBusterChallengeState(ChallengeState):
         self.store_operator(op)
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
-        if self.news_index + 1 < len(self.player.current_challenge.myths):
+        if self.myth_index + 1 < len(self.player.current_challenge.myths):
             ns = MythBusterChallengeState(self)
-            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.news_index], op.id is MythBusterChallenge.provided_ops[0].id)
-            if self.player.current_challenge.myths[self.news_index].is_fact:
-                info = "It is a truth!" if ret else "It is a myth!"
-            else:
-                info = "It is a myth!" if ret else "It is a truth!"
-            return MessageDisplayState(ns, "Correct!" if ret else "Incorrect!", info)
+            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.myth_index], op.id is MythBusterChallenge.provided_ops[0].id)
+            info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
+            ns.player.score += MythBusterChallenge.score_correct_guess if ret else MythBusterChallenge.score_incorrect_guess
+            return MessageDisplayState.show_message(ns, "Correct!" if ret else "Incorrect!", info)
         else:
             ns = ChallengeMenuState(self)
-            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.news_index], op.id is MythBusterChallenge.provided_ops[0].id)
+            ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.myth_index], op.id is MythBusterChallenge.provided_ops[0].id)
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
-            if self.player.current_challenge.myths[self.news_index].is_fact:
-                info = "It is a truth!" if ret else "It is a myth!"
-            else:
-                info = "It is a myth!" if ret else "It is a truth!"
+            info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
             if passed:
-                return MessageDisplayState(
-                    MessageDisplayState(ns.check_win_lose_state(), "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=self),
-                    "Correct!" if ret else "Incorrect!", info
-                )
+                # return MessageDisplayState(
+                #     MessageDisplayState(ns, "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=ns),
+                #     "Correct!" if ret else "Incorrect!", info, old=ns
+                # )
+                return (MessageDisplayState.show_message(ns, "Title", "Content")
+                        .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
+                        .before("Correct!" if ret else "Incorrect!", info))
             else:
-                return MessageDisplayState(
-                    MessageDisplayState(ns.check_win_lose_state(), "Nice try!", f"You only have {int(corr * 100)}% completion.", old=self),
-                    "Correct!" if ret else "Incorrect!", info
-                )
+                # return MessageDisplayState(
+                #     MessageDisplayState(ns, "Nice try!", f"You only have a {int(corr * 100)}% completion.", old=ns),
+                #     "Correct!" if ret else "Incorrect!", info, old=ns
+                # )
+                return (MessageDisplayState.show_message(ns, "Title", "Content")
+                        .before("Nice try!", f"You only have a {int(corr * 100)}% completion.")
+                        .before("Correct!" if ret else "Incorrect!", info))
 
     def describe_state(self) -> str:
-        return (f"Myth's Content: {self.player.current_challenge.myths[self.news_index]}"
-                f"\t(Myth Guessed: {self.news_index}/{len(self.player.current_challenge.myths)})\nFACT or MYTH?")
+        return (f"Myth's Content: {self.player.current_challenge.myths[self.myth_index]}"
+                f"\t(Myth Guessed: {self.myth_index}/{len(self.player.current_challenge.myths)})\nFACT or MYTH?")
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
