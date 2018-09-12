@@ -597,7 +597,7 @@ class NewsSortingChallengeState(ChallengeState):
             philosophy = """Here is why we made this challenge.
 Just like what system did for spam emails, we receive useless information every day in our lives.  
 Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
-This challenge is a representation about ‘Volume’ in Big Data."""
+This challenge is a representation about ‘Variety’ in Big Data."""
             if passed:
                 return (MessageDisplayState.show_message(ns, "", philosophy)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
@@ -690,7 +690,7 @@ class MythBusterChallenge(Challenge):
         Myth("The largest recorded snowflake was in Keogh, MT during year 1887, and was inches wide.", True),
         Myth("You burn more calories sleeping than you do watching television.", True),
         Myth("There are more lifeforms living on your skin than there are people on the planet.", True),
-        Myth("If you believe that you’re truly one in a million, there are still approximately 7,18more people out there just like you.", True),
+        Myth("If you believe that you’re truly one in a million, there are still approximately 7184 more people out there just like you.", True),
         Myth("A single cloud can weight more than million pounds.", True),
         Myth("A human will eat on average 70 assorted insects and 10 spiders while sleeping.", True),
         Myth("James Buchanan, the 15th U. president continuously bought slaves with his own money in order to free them.", True),
