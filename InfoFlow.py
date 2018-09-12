@@ -150,7 +150,7 @@ Operator.all_ops = [Operator(id.value, id) for id in list(OperatorIds)]
 
 
 class Challenge:
-    challenge_rewards = [100, 200, 300, 4000, 500]  # from 0 to 5 (inclusive)
+    challenge_rewards = [100, 200, 300, 400, 500]  # from 0 to 5 (inclusive)
     reward_completion_multiplier = [.00, .25, .50, .75, 1.00, 1.25]  # 0%, 20%, 40%, 60%, 80%, 100% completion
     score_correct_multiplier_level = 100
     score_cancel_multiplier_level = -100
