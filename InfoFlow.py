@@ -595,7 +595,7 @@ class NewsSortingChallengeState(ChallengeState):
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             philosophy = """Here is why we made this challenge.
-Just like what system did for spam emails, we receive useless information every day in our lives. Just imagine, our brain reach about 34 Gigabyte of information while most of them is spam. 
+Just like what system did for spam emails, we receive useless information every day in our lives.  
 Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
 This challenge is a representation about ‘Volume’ in Big Data."""
             if passed:
@@ -818,12 +818,16 @@ class MythBusterChallengeState(ChallengeState):
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
+            reason = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I fund them on the internet, neither. 
+Actually, maybe you did not realize, but we are surrounded by fake news and information. 
+This challenge is a representation about ‘Veracity’ in Big Data.
+"""
             if passed:
                 # return MessageDisplayState(
                 #     MessageDisplayState(ns, "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=ns),
                 #     "Correct!" if ret else "Incorrect!", info, old=ns
                 # )
-                return (MessageDisplayState.show_message(ns, "Title", "Content")
+                return (MessageDisplayState.show_message(ns, "", reason)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
                         .before("Correct!" if ret else "Incorrect!", info))
             else:
@@ -831,7 +835,7 @@ class MythBusterChallengeState(ChallengeState):
                 #     MessageDisplayState(ns, "Nice try!", f"You only have a {int(corr * 100)}% completion.", old=ns),
                 #     "Correct!" if ret else "Incorrect!", info, old=ns
                 # )
-                return (MessageDisplayState.show_message(ns, "Title", "Content")
+                return (MessageDisplayState.show_message(ns, "", reason)
                         .before("Nice try!", f"You only have a {int(corr * 100)}% completion.")
                         .before("Correct!" if ret else "Incorrect!", info))
 
