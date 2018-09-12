@@ -113,7 +113,7 @@ class StateDisplay(tk.Frame):
         self.frame_state_describe = tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=Style.get_font("Chiller", Style.font_size_title, bold=True),
                                                   bg=Style.color_background, fg=Style.color_foreground)
         self.frame_state_describe.grid(row=2, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
-        self.label_state_describe = tk.Label(self.frame_state_describe, font=Style.get_font("Consolas", Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
+        self.label_state_describe = tk.Label(self.frame_state_describe, font=Style.get_font("Consolas", Style.font_size_normal), bg=Style.color_background, fg=Style.color_text)
         self.label_state_describe.grid(row=0, column=0, sticky=N + S + W + E)
         # set grid auto expand
         self.grid_auto_expand(parent, 2, 2, row_weights=[0, 0, 1], col_weights=[0, 1, 0])
@@ -355,7 +355,7 @@ class MessageDisplayStateRenderer(StateRenderer):
         display.canvas_game.create_oval(54, 54, 96, 96, fill=Style.color_background)
         display.canvas_game.create_text(75, 75, text="i", fill=Style.color_text, font=Style.get_font("Impact", 28, bold=True))
         display.canvas_game.create_text(120, 75, text=state.title, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_title, bold=True), anchor=tk.W, width=400)
-        display.canvas_game.create_text(50, 120, text=state.info, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_normal), anchor=tk.W, width=500)
+        display.canvas_game.create_text(50, 120, text=state.info, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_normal), anchor=tk.NW, width=500)
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
