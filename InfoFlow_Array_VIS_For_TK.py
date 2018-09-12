@@ -398,7 +398,7 @@ def render_state(state: 'State'):
     in_render_state = True
     global keep_render, renderer
     keep_render = False
-    if StateRenderer.last_state and renderer:
+    if StateRenderer.last_state and StateRenderer.last_state.selected_operator and renderer:
         if show_state_array.STATE_WINDOW:
             renderer.post_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
             if not renderer.is_static_post_renderer():
@@ -407,6 +407,7 @@ def render_state(state: 'State'):
                     keep_post_render = renderer.post_dynamic_render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)
                     show_state_array.STATE_WINDOW.root.update()
                     time.sleep(.05)
+            state.selected_operator = None
 
     show_state_array.STATE_WINDOW.canvas_game.delete(tk.ALL)
 
