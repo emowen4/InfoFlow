@@ -9,12 +9,33 @@ import time
 from threading import Thread
 
 
+def rgb2hex(r, g, b):
+    return "#%02x%02x%02x" % (r, g, b)
+
+
+class Style:
+    color_background = "#373737"
+    color_foreground = "#8E8E8E"
+    color_text = "#E4E4E4"
+    color_border = "#373737"
+    font_name_default = "Helvetica"
+    font_size_title = 20
+    font_size_normal = 14
+
+    loaded_fonts = {}
+
+    @staticmethod
+    def get_font(name: str, size: int, bold: bool = False, italic: bool = False, underline: bool = False, overstrike: bool = False, nocache=False) -> "font.Font":
+        key = (name, size, bold, italic, underline, overstrike)
+        if key in Style.loaded_fonts:
+            return Style.loaded_fonts[key]
+        f = font.Font(family=name, size=size, weight="bold" if bold else "normal", slant="italic" if italic else "roman", underline=str(underline).lower(), overstrike=str(overstrike).lower())
+        if not nocache:
+            Style.loaded_fonts[key] = f
+        return f
+
+
 class StateDisplay(tk.Frame):
-    background = "black"
-    foreground = "darkgray"
-    textcolor = "white"
-    highlightcolor = "white"
-    default_font_name = "Helvetica"
 
     def __init__(self, parent, width, height):
         super().__init__(parent)
@@ -32,84 +53,71 @@ class StateDisplay(tk.Frame):
         # |-----------------------------------|
         # |           State Describe          |
         # -------------------------------------
-        self.style(self.root, bg=StateDisplay.background)
+        self.style(self.root, bg=Style.color_background)
         # Player Info
-        self.frame_player_info = tk.LabelFrame(self.root, text=" Player Stats ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True),
-                                               bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.frame_player_info = tk.LabelFrame(self.root, text=" Player Stats ", borderwidth=2, relief="groove", font=Style.get_font("Chiller", Style.font_size_title, bold=True),
+                                               bg=Style.color_background, fg=Style.color_foreground)
         self.frame_player_info.grid(row=0, column=0, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
-        self.label_energy = tk.Label(self.frame_player_info, text="Energy: ", font=self.get_font(StateDisplay.default_font_name, 12, bold=True),
-                                     bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_energy = tk.Label(self.frame_player_info, text="Energy: ", font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True),
+                                     bg=Style.color_background, fg=Style.color_foreground)
         self.label_energy.grid(row=0, column=0, sticky=W)
-        self.canvas_energy = self.style(tk.Canvas(self.frame_player_info, width=100, height=20, bg=StateDisplay.background),
-                                        hc=StateDisplay.highlightcolor, ht=1)
+        self.canvas_energy = self.style(tk.Canvas(self.frame_player_info, width=100, height=20, bg=Style.color_background),
+                                        hc=Style.color_border, ht=1)
         self.canvas_energy.grid(row=0, column=1, sticky=W)
-        color_energy = self.rgb2hex(46, 204, 113)
+        color_energy = rgb2hex(46, 204, 113)
         self.rect_energy = self.canvas_energy.create_rectangle(0, 0, 100, 20, fill=color_energy, outline=color_energy)
-        # self.text_energy = self.canvas_energy.create_text(25, 10, text="100", font=self.get_font("Helvetica", 12, bold=True))
-        self.label_score = tk.Label(self.frame_player_info, text="Score: ", bg=StateDisplay.background, fg=StateDisplay.foreground, font=self.get_font(StateDisplay.default_font_name, 12, bold=True))
+        # self.text_energy = self.canvas_energy.create_text(25, 10, text="100", font=Style.get_font("Helvetica", Style.font_size_normal, bold=True))
+        self.label_score = tk.Label(self.frame_player_info, text="Score: ", bg=Style.color_background, fg=Style.color_foreground,
+                                    font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True))
         self.label_score.grid(row=1, column=0, sticky=W)
-        self.text_score = tk.Label(self.frame_player_info, font=self.get_font(StateDisplay.default_font_name, 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.text_score = tk.Label(self.frame_player_info, font=Style.get_font(Style.font_name_default, Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.text_score.grid(row=1, column=1, sticky=W)
-        self.label_finished = tk.Label(self.frame_player_info, text="Finished Challenges: ", font=self.get_font(StateDisplay.default_font_name, 12, bold=True),
-                                       bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_finished = tk.Label(self.frame_player_info, text="Finished Challenges: ", font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True),
+                                       bg=Style.color_background, fg=Style.color_foreground)
         self.label_finished.grid(row=2, column=0, sticky=W)
-        self.text_finished = tk.Label(self.frame_player_info, font=self.get_font(StateDisplay.default_font_name, 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.text_finished = tk.Label(self.frame_player_info, font=Style.get_font(Style.font_name_default, Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.text_finished.grid(row=2, column=1, sticky=W)
-        self.label_money = tk.Label(self.frame_player_info, text="Money/Debt: ", font=self.get_font(StateDisplay.default_font_name, 12, bold=True),
-                                    bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_money = tk.Label(self.frame_player_info, text="Money/Debt: ", font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True),
+                                    bg=Style.color_background, fg=Style.color_foreground)
         self.label_money.grid(row=3, column=0, sticky=W)
-        self.text_money = tk.Label(self.frame_player_info, font=self.get_font(StateDisplay.default_font_name, 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.text_money = tk.Label(self.frame_player_info, font=Style.get_font(Style.font_name_default, Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.text_money.grid(row=3, column=1, sticky=W)
-        self.label_difficulty_level = tk.Label(self.frame_player_info, text="Difficulty Level: ", font=self.get_font(StateDisplay.default_font_name, 12, bold=True),
-                                               bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_difficulty_level = tk.Label(self.frame_player_info, text="Difficulty Level: ", font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True),
+                                               bg=Style.color_background, fg=Style.color_foreground)
         self.label_difficulty_level.grid(row=4, column=0, sticky=W)
-        self.text_difficulty_level = tk.Label(self.frame_player_info, font=self.get_font(StateDisplay.default_font_name, 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.text_difficulty_level = tk.Label(self.frame_player_info, font=Style.get_font(Style.font_name_default, Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.text_difficulty_level.grid(row=4, column=1, sticky=W)
-        self.label_accepted = tk.Label(self.frame_player_info, text="Has accepted challenge: ", font=self.get_font(StateDisplay.default_font_name, 12, bold=True),
-                                       bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_accepted = tk.Label(self.frame_player_info, text="Has accepted challenge: ", font=Style.get_font(Style.font_name_default, Style.font_size_normal, bold=True),
+                                       bg=Style.color_background, fg=Style.color_foreground)
         self.label_accepted.grid(row=5, column=0, sticky=W)
-        self.text_accepted = tk.Label(self.frame_player_info, font=self.get_font(StateDisplay.default_font_name, 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.text_accepted = tk.Label(self.frame_player_info, font=Style.get_font(Style.font_name_default, Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.text_accepted.grid(row=5, column=1, sticky=W)
         # Game Frame
-        self.label_round = tk.Label(self.root, text="\nRound Beginning", bg=StateDisplay.background, fg=StateDisplay.foreground, font=self.get_font("Algerian", 12))
+        self.label_round = tk.Label(self.root, text="\nRound Beginning", bg=Style.color_background, fg=Style.color_foreground, font=Style.get_font("Algerian", Style.font_size_normal))
         self.label_round.grid(row=0, column=1, padx=4, pady=4, sticky=N + S + W + E)
-        self.frame_game = tk.LabelFrame(self.root, text=" Game View ", bg=StateDisplay.background, fg=StateDisplay.foreground, font=self.get_font("Chiller", 18, bold=True))
+        self.frame_game = tk.LabelFrame(self.root, text=" Game View ", bg=Style.color_background, fg=Style.color_foreground, font=Style.get_font("Chiller", Style.font_size_title, bold=True))
         self.frame_game.grid(row=1, column=1, ipadx=2, ipady=2, padx=8, pady=12)
-        self.canvas_game = self.style(tk.Canvas(self.frame_game, width=600, height=400, bg=StateDisplay.background),
-                                      hc="black", ht=0)
+        self.canvas_game = self.style(tk.Canvas(self.frame_game, width=600, height=400, bg=Style.color_background),
+                                      hc=Style.color_border, ht=0)
         self.canvas_game.grid(row=0, column=0)
         # Operators
-        self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True)),
-                                          bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.frame_operators = self.style(tk.LabelFrame(self.root, text=" Operators ", borderwidth=2, relief="groove", font=Style.get_font("Chiller", Style.font_size_title, bold=True)),
+                                          bg=Style.color_background, fg=Style.color_foreground)
         self.frame_operators.grid(row=0, column=2, rowspan=2, columnspan=1, ipadx=4, ipady=4, padx=4, pady=4, sticky=N + S + W + E)
-        self.list_operators = self.style(tk.Listbox(self.frame_operators, width=30, font=self.get_font(StateDisplay.default_font_name, 14), bg=StateDisplay.background, fg=StateDisplay.foreground),
-                                         hc="black", ht=0, borderwidth=0, selectmode=tk.SINGLE, selectbackground="white", selectforeground="black")
+        self.list_operators = self.style(tk.Listbox(self.frame_operators, width=30, font=Style.get_font(Style.font_name_default, Style.font_size_normal),
+                                                    bg=Style.color_background, fg=Style.color_foreground, borderwidth=0, selectmode=tk.SINGLE,
+                                                    selectbackground=Style.color_foreground, selectforeground=Style.color_background),
+                                         hc=Style.color_border, ht=0)
         self.list_operators.grid(row=0, column=0, padx=4, pady=4)
         # Label for describing states
-        self.frame_state_describe = tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=self.get_font("Chiller", 18, bold=True),
-                                                  bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.frame_state_describe = tk.LabelFrame(self.root, text=" Current State Description ", borderwidth=2, relief="groove", font=Style.get_font("Chiller", Style.font_size_title, bold=True),
+                                                  bg=Style.color_background, fg=Style.color_foreground)
         self.frame_state_describe.grid(row=2, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
-        self.label_state_describe = tk.Label(self.frame_state_describe, font=self.get_font("Consolas", 12), bg=StateDisplay.background, fg=StateDisplay.foreground)
+        self.label_state_describe = tk.Label(self.frame_state_describe, font=Style.get_font("Consolas", Style.font_size_normal), bg=Style.color_background, fg=Style.color_foreground)
         self.label_state_describe.grid(row=0, column=0, sticky=N + S + W + E)
         # set grid auto expand
         self.grid_auto_expand(parent, 2, 2, row_weights=[0, 0, 1], col_weights=[0, 1, 0])
         self.grid_auto_expand(self.frame_player_info, 6, 2, row_weights=[0 for _ in range(6)], col_weights=[0, 0])
-
-    loaded_fonts = {}
-
-    @staticmethod
-    def get_font(name: str, size: int, bold: bool = False, italic: bool = False, underline: bool = False, overstrike: bool = False, nocache=False) -> "font.Font":
-        key = (name, size, bold, italic, underline, overstrike)
-        if key in StateDisplay.loaded_fonts:
-            return StateDisplay.loaded_fonts[key]
-        f = font.Font(family=name, size=size, weight="bold" if bold else "normal", slant="italic" if italic else "roman", underline=str(underline).lower(), overstrike=str(overstrike).lower())
-        if not nocache:
-            StateDisplay.loaded_fonts[key] = f
-        return f
-
-    @staticmethod
-    def rgb2hex(r, g, b):
-        return "#%02x%02x%02x" % (r, g, b)
 
     @staticmethod
     def style(w, hc=None, ht=None, **options):
@@ -218,17 +226,17 @@ class GameStartStateRenderer(StateRenderer):
             return GameStartStateRenderer.Rain(content=random.choices(population=["0", "1", "0", "1", "0", "1", "0", "1"], k=random.randint(6, 18)),
                                                # x=random.randint(-10, 590), y=random.randint(-500, -300), speed=random.random() * 32 + 2,
                                                x=x, y=random.randint(-10, 390), speed=speed,
-                                               size=random.randint(4, 24), color=StateDisplay.textcolor)
+                                               size=random.randint(4, 24), color=Style.color_text)
 
     def init(self, display):
-        self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill=StateDisplay.textcolor)
-        self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill=StateDisplay.textcolor)
-        self.font_title = StateDisplay.get_font("Gill Sans MT", 28, True, nocache=True)
-        self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill="black", font=self.font_title)
+        self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill=Style.color_text, outline=Style.color_text)
+        self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill=Style.color_text, outline=Style.color_background)
+        self.font_title = Style.get_font("Gill Sans MT", 28, True, nocache=True)
+        self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill=Style.color_background, font=self.font_title)
         self.rains = [GameStartStateRenderer.Rain.random() for _ in range(40)]
         self.text_rains = []
         for r in self.rains:
-            self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", r.size), text=r.text, fill=r.color))
+            self.text_rains.append(display.canvas_game.create_text(r.x, r.y, anchor=tk.NW, font=Style.get_font("Consolas", r.size), text=r.text, fill=r.color))
 
     def is_static_renderer(self):
         return False
@@ -250,7 +258,7 @@ class GameStartStateRenderer(StateRenderer):
                 text_rains.remove(t)
                 nr = GameStartStateRenderer.Rain.random()
                 rains.append(nr)
-                text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=StateDisplay.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
+                text_rains.append(display.canvas_game.create_text(nr.x, nr.y, anchor=tk.NW, font=Style.get_font("Consolas", nr.size), text=nr.text, fill=nr.color))
         self.rains, self.text_rains = rains, text_rains
 
     def is_static_post_renderer(self):
@@ -275,15 +283,15 @@ class GameStartStateRenderer(StateRenderer):
 class ChallengeMenuStateRenderer(StateRenderer):
     def init(self, display):
         self.c_menus = [[i * 100 + 50, 100 + 50 * i, random.randint(0, 50), random.randint(0, 10), .5, .5] for i in range(4)]
-        self.font = StateDisplay.get_font(StateDisplay.default_font_name, 16, italic=True)
+        self.font = Style.get_font(Style.font_name_default, 16, italic=True)
         self.label_accept = display.canvas_game.create_text(self.c_menus[0][0], self.c_menus[0][1], anchor=W,
-                                                            text=OperatorIds.CHALLENGE_ACCEPT.name, fill=StateDisplay.textcolor, font=self.font)
+                                                            text=OperatorIds.CHALLENGE_ACCEPT.name, fill=Style.color_text, font=self.font)
         self.label_decine = display.canvas_game.create_text(self.c_menus[1][0], self.c_menus[1][1], anchor=W,
-                                                            text=OperatorIds.CHALLENGE_DECINE.name, fill=StateDisplay.textcolor, font=self.font)
+                                                            text=OperatorIds.CHALLENGE_DECINE.name, fill=Style.color_text, font=self.font)
         self.label_pay = display.canvas_game.create_text(self.c_menus[2][0], self.c_menus[2][1], anchor=W,
-                                                         text=OperatorIds.PAY_DEBT.name, fill=StateDisplay.textcolor, font=self.font)
+                                                         text=OperatorIds.PAY_DEBT.name, fill=Style.color_text, font=self.font)
         self.label_finish_round = display.canvas_game.create_text(self.c_menus[3][0], self.c_menus[3][1], anchor=W,
-                                                                  text=OperatorIds.FINISH_ROUND.name, fill=StateDisplay.textcolor, font=self.font)
+                                                                  text=OperatorIds.FINISH_ROUND.name, fill=Style.color_text, font=self.font)
 
     def is_static_renderer(self):
         return False
@@ -321,7 +329,7 @@ class ChallengeMenuStateRenderer(StateRenderer):
             self.pos_select = self.c_menus[3]
             self.text_select = self.label_finish_round
         self.size_select = 16
-        self.font_select = StateDisplay.get_font(StateDisplay.default_font_name, self.size_select, bold=True, italic=True, nocache=True)
+        self.font_select = Style.get_font(Style.font_name_default, self.size_select, bold=True, italic=True, nocache=True)
 
     def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         if self.size_select < 22:
@@ -343,11 +351,11 @@ class MessageDisplayStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        display.canvas_game.create_oval(50, 50, 100, 100, fill=StateDisplay.textcolor)
-        display.canvas_game.create_oval(54, 54, 96, 96, fill="black")
-        display.canvas_game.create_text(75, 75, text="i", fill=StateDisplay.textcolor, font=StateDisplay.get_font("Impact", 28, bold=True))
-        display.canvas_game.create_text(120, 75, text=state.title, fill=StateDisplay.textcolor, font=StateDisplay.get_font(StateDisplay.default_font_name, 24, bold=True), anchor=tk.W, width=400)
-        display.canvas_game.create_text(50, 120, text=state.info, fill=StateDisplay.textcolor, font=StateDisplay.get_font(StateDisplay.default_font_name, 14), anchor=tk.W, width=500)
+        display.canvas_game.create_oval(50, 50, 100, 100, fill=Style.color_text)
+        display.canvas_game.create_oval(54, 54, 96, 96, fill=Style.color_background)
+        display.canvas_game.create_text(75, 75, text="i", fill=Style.color_text, font=Style.get_font("Impact", 28, bold=True))
+        display.canvas_game.create_text(120, 75, text=state.title, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_title, bold=True), anchor=tk.W, width=400)
+        display.canvas_game.create_text(50, 120, text=state.info, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_normal), anchor=tk.W, width=500)
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
@@ -356,8 +364,8 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill=StateDisplay.foreground,
-                                        font=StateDisplay.get_font(StateDisplay.default_font_name, 20), width=550)
+        display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill=Style.color_foreground,
+                                        font=Style.get_font(Style.font_name_default, 20), width=550)
 
 
 class MythBusterChallengeStateRenderer(StateRenderer):
@@ -366,8 +374,8 @@ class MythBusterChallengeStateRenderer(StateRenderer):
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
-        display.canvas_game.create_text(300, 200, text=f"Statement: {state.player.current_challenge.myths[state.myth_index]}", fill=StateDisplay.foreground,
-                                        font=StateDisplay.get_font(StateDisplay.default_font_name, 20), width=550)
+        display.canvas_game.create_text(300, 200, text=f"Statement: {state.player.current_challenge.myths[state.myth_index]}", fill=Style.color_foreground,
+                                        font=Style.get_font(Style.font_name_default, 20), width=550)
 
 
 StateRenderer.all = {
