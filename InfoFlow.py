@@ -38,7 +38,7 @@ from typing import List, Dict, Set
 
 
 class Debug:
-    debug = True  # DEBUG
+    debug = False  # DEBUG
 
 
 class PlayerInfo:
@@ -143,7 +143,7 @@ class OperatorIds(Enum):
     CHALLENGE_ACCEPT = "Accept the challenge"
     CHALLENGE_DECINE = "Decine the challenge"
     CHALLENGE_CANCEL = "Cancel the accepted challenge"
-    PAY_DEBT = "Pay for the debt"
+    PAY_DEBT = "Pay off the debt"
     FINISH_ROUND = "End round"
 
 
@@ -625,7 +625,7 @@ class NewsSortingChallengeState(ChallengeState):
             philosophy = """Here is why we made this challenge.
 Just like what system did for spam emails, we receive useless information every day in our lives.
 Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
-This challenge is a representation about ‘Volume’ in Big Data."""
+This challenge is a representation of 'Variety' in Big Data."""
             if passed:
                 return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
@@ -760,9 +760,10 @@ class MythBusterChallenge(Challenge):
         Myth("A hardboiled egg will spin, but a soft-boiled egg will not.", True),
         Myth("Avocados are poisonous to birds.", True),
         Myth("Chewing gum burns about 1calories per hour.", True),
-        Myth(
-            "The number of animals killed for meat every hour in the U. is 500,000.If you try to suppress a sneeze, you can rupture a blood vessel in your head or neck and die.Celery has negative calories! It takes more calories to eat a piece of celery than the celery has in it to begin wit It’s the same with apples!More people are allergic to cow’s milk than any other food.Only 8% of dieters will follow a restrictive weight loss plan (such as hCG Drops diet, garcinia cambogia diet, etc.),Coconut water can be used as blood plasma.",
-            True),
+        Myth("The number of animals killed for meat every hour in the U. is 500,000.If you try to suppress a sneeze, you can rupture a blood vessel in your head or neck "
+             "and die.Celery has negative calories! It takes more calories to eat a piece of celery than the celery has in it to begin wit It’s the same with apples!More people are allergic "
+             "to cow’s milk than any other food.Only 8% of dieters will follow a restrictive weight loss plan (such as hCG Drops diet, garcinia cambogia diet, etc.), "
+             "Coconut water can be used as blood plasma.", True),
         Myth("Human thigh bones are stronger than concrete.", True),
         Myth("Cockroaches can live for several weeks with their heads cut off, because their brains are located inside their bod They would eventually die from being unable to eat.", True),
         Myth("Scientists have tracked butterflies that travel over 3,000 miles.", True),
@@ -813,7 +814,7 @@ class MythBusterChallenge(Challenge):
 
     @staticmethod
     def random(level):
-        count = level + 10 if not Debug.debug else 1
+        count = level + 5 if not Debug.debug else 1
         myths = set()
         while len(myths) < count:
             myths.add(choice(MythBusterChallenge.all_myths))
@@ -842,9 +843,9 @@ class MythBusterChallengeState(ChallengeState):
             ns = ChallengeMenuState(self)
             ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.myth_index], op.id is MythBusterChallenge.provided_ops[0].id)
             info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
-            philosophy = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I fund them on the internet, neither. 
-Actually, maybe you did not realize, but we are surrounded by fake news and information. 
-This challenge is a representation about ‘Veracity’ in Big Data."""
+            philosophy = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I found them on the internet, neither. 
+Actually, maybe you did not realize, we are surrounded by fake news and information. 
+This challenge is a representation of ‘Veracity’ in Big Data."""
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             if passed:
