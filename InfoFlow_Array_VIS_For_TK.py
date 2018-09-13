@@ -398,18 +398,24 @@ class MythBusterChallengeStateRenderer(StateRenderer):
             self.content_seal = "FACT"
         elif last_state.selected_operator.id is MythBusterChallenge.provided_ops[1].id:
             self.content_seal = "MYTH"
-        self.rect_seal = display.canvas_game.create_oval(300, 200, 500, 280, fill="red", outline="red")
-        self.font_seal = Style.get_font("Arial", 24, True, nocache=True)
-        self.font_size = 24
-        self.text_seal = display.canvas_game.create_text(400, 240, text=self.content_seal, fill=Style.color_foreground, font=self.font_seal)
-        self.size_outline = 1
+        else:
+            self.content_seal is None
+        if self.content_seal:
+            self.rect_seal = display.canvas_game.create_oval(300, 200, 500, 280, fill="red", outline="red")
+            self.font_seal = Style.get_font("Arial", 24, True, nocache=True)
+            self.font_size = 24
+            self.text_seal = display.canvas_game.create_text(400, 240, text=self.content_seal, fill=Style.color_foreground, font=self.font_seal)
+            self.size_outline = 1
 
     def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        display.canvas_game.itemconfigure(self.rect_seal, width=self.size_outline)
-        self.size_outline += 1
-        self.font_size += 2
-        self.font_seal.configure(size=self.font_size)
-        return self.size_outline is not 10
+        if self.content_seal:
+            display.canvas_game.itemconfigure(self.rect_seal, width=self.size_outline)
+            self.size_outline += 1
+            self.font_size += 2
+            self.font_seal.configure(size=self.font_size)
+            return self.size_outline is not 10
+        else:
+            return False
 
 
 class CocoChallengeStateRenderer(StateRenderer):
