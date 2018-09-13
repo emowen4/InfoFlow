@@ -116,7 +116,7 @@ class StateDisplay(tk.Frame):
                                                   font=Style.get_font("Chiller", Style.font_size_title, bold=True), bg=Style.color_background, fg=Style.color_text)
         self.frame_state_describe.grid(row=2, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
         self.label_state_describe = tk.Label(self.frame_state_describe, font=Style.get_font("Consolas", Style.font_size_normal),
-                                             bg=Style.color_background, fg=Style.color_text, justify=tk.CENTER, anchor=N+W, wraplength=1200)
+                                             bg=Style.color_background, fg=Style.color_text, justify=tk.CENTER, anchor=N + W, wraplength=1200)
         self.label_state_describe.pack(expand=True)
         # set grid auto expand
         self.grid_auto_expand(parent, 2, 2, row_weights=[0, 0, 1], col_weights=[0, 1, 0])
@@ -273,9 +273,9 @@ class GameStartStateRenderer(StateRenderer):
         self.offset_size_title = 0
 
     def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        self.offset_outer = [i + 18 for i in self.offset_outer]
-        self.offset_inner = [i + 18 for i in self.offset_inner]
-        self.offset_size_title += 5
+        self.offset_outer = [i + 20 for i in self.offset_outer]
+        self.offset_inner = [i + 20 for i in self.offset_inner]
+        self.offset_size_title += 6
         self.font_title.configure(size=28 + self.offset_size_title)
         display.canvas_game.coords(self.rect_outer, 200 - self.offset_outer[0], 150 - self.offset_outer[1], 400 + self.offset_outer[2], 250 + self.offset_outer[3])
         display.canvas_game.coords(self.rect_inner, 204 - self.offset_outer[0], 154 - self.offset_outer[1], 396 + self.offset_outer[2], 246 + self.offset_outer[3])
@@ -342,7 +342,7 @@ class ChallengeMenuStateRenderer(StateRenderer):
             return True
         elif self.pos_select[0] < 650:
             display.canvas_game.coords(self.text_select, self.pos_select[0], self.pos_select[1])
-            self.pos_select[0] += 30
+            self.pos_select[0] += 50
             return True
         else:
             return False
@@ -391,13 +391,29 @@ class MythBusterChallengeStateRenderer(StateRenderer):
                                         font=Style.get_font(Style.font_name_default, 20), width=550)
 
 
+class CocoChallengeStateRenderer(StateRenderer):
+    def init(self, display):
+        pass
+
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        super().render(display, state, last_state)
+        if state.phase_index is 0:
+            display.canvas_game.create_text(300, 200, text=f"{state.describe_state()}", fill=Style.color_text,
+                                            font=Style.get_font(Style.font_name_default, 20), width=550)
+        elif state.phase_index is 1:
+            display.canvas_game.create_text(50, 50, text=f"{state.describe_state()}", fill=Style.color_text,
+                                            anchor=tk.NW,
+                                            font=Style.get_font(Style.font_name_default, 16), width=550)
+
+
 StateRenderer.all = {
     # TODO
     GameStartState: lambda: GameStartStateRenderer(),
     ChallengeMenuState: lambda: ChallengeMenuStateRenderer(),
     MessageDisplayState: lambda: MessageDisplayStateRenderer(),
     NewsSortingChallengeState: lambda: NewsSortingChallengeStateRenderer(),
-    MythBusterChallengeState: lambda: MythBusterChallengeStateRenderer()
+    MythBusterChallengeState: lambda: MythBusterChallengeStateRenderer(),
+    CocoChallengeState: lambda: CocoChallengeStateRenderer()
 }
 
 

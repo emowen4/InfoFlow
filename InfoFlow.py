@@ -20,7 +20,7 @@ A platform gradually emerges which offers huge amounts of money for employees. T
 complicated information using human power. However, once you choose this platform, all your personal information,
 including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users.
 Some of those challenges are complicated, ranging from physical work to careful thinking.
---------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
     You are a college student. Yesterday, there was a group of people breaking into your house and telling you that
 your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt.
 You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time,
@@ -38,7 +38,7 @@ from typing import List, Dict, Set
 
 
 class Debug:
-    debug = False  # DEBUG
+    debug = True  # DEBUG
 
 
 class PlayerInfo:
@@ -1035,9 +1035,10 @@ This challenge is a representation about 'Volume' in Big Data."""
     def describe_state(self):
         s = self.player.current_challenge.sentences[self.coco_index]
         if self.phase_index is 0:
-            return f"Memorize this information:\n\t{CocoChallenge.all_sentences[s[0]][s[1]]}"
+            return f"Memorize this information:\n    {CocoChallenge.all_sentences[s[0]][s[1]]}"
         elif self.phase_index is 1:
-            return f"Which was shown before in Memorization #{self.coco_index}:\n\t{self.player.current_challenge.all_sentences[s[0]]}"
+            choices = ''.join([f'\n    {CocoChallenge.provided_ops[ind].name}: {s}' for ind, s in enumerate(self.player.current_challenge.all_sentences[s[0]])])
+            return f"Which was shown before in Memorization #{self.coco_index}:\n{choices}"
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
