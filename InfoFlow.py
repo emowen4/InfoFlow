@@ -49,7 +49,7 @@ class PlayerInfo:
                  canceled: int = 0,
                  challenge_count: int = 0,
                  money: int = 0 if not Debug.debug else 100,
-                 debt: int = 1000 if not Debug.debug else 100,
+                 debt: int = 500 if not Debug.debug else 100,
                  energy: int = 100,
                  info_got: int = 0,
                  current_challenge: 'Challenge' = None,
@@ -945,7 +945,7 @@ class CocoChallenge(Challenge):
     score_incorrect_sentences = -20
     level_correct_required = [.75, .5, .85, .9, .95]
 
-    def __init__(self, level: int, sentences: 'Dict[int, (int, int)]', to_remember: 'List[int]', remembered: 'List[int]'):
+    def __init__(self, level: int, sentences: 'Dict[int, (int, int)]', to_remember: 'List[int]', remembered: 'Dict[int]'):
         super().__init__("Coco Challenge", level)
         #  Stores {Index from 0 : (Index in CocoChallenge.all_sentences, Which one to remember)}
         self.sentences = sentences
@@ -1021,7 +1021,7 @@ class CocoChallengeState(ChallengeState):
         elif self.phase_index is 1:
             if self.coco_index + 1 < len(self.player.current_challenge.to_remember):
                 ns = CocoChallengeState(self)
-                ns.player.current_challenge.remembered.append(
+                ns.player.current_challenge.remembered[self.coco_index] = (
                     0 if op.id is CocoChallenge.provided_ops[0]
                     else 1 if op.id is CocoChallenge.provided_ops[1]
                     else 2 if op.id is CocoChallenge.provided_ops[2]
@@ -1035,8 +1035,8 @@ class CocoChallengeState(ChallengeState):
                     else 2 if op.id is CocoChallenge.provided_ops[2].id
                     else -1)
                 philosophy = """To be honest, all sentences are from the Official Guide of SAT test. So you can relax since you wont see things like this in your daily life ^^.
-But it is still a miniature of all information we receive. Just imagine, our brains are exposed to approximately 34 Gigabyte of information while most of them are spam.
-This challenge is a representation about 'Volume' in Big Data."""
+But it is still a miniature of all information we receive. Just imagine, our brains are exposed to approximately 34 gigabytes of information while most of them are spam.
+This challenge is a representation of 'Volume' in Big Data."""
                 passed, corr = ns.player.current_challenge.submit(ns.player)
                 ns.finish_challenge()
                 if passed:
