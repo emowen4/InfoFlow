@@ -818,8 +818,8 @@ class MythBusterChallengeState(ChallengeState):
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
-            reason = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I fund them on the internet, neither. 
-Actually, maybe you did not realize, but we are surrounded by fake news and information. 
+            reason = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I found them on the internet, neither. 
+Actually, maybe you did not realize, we are surrounded by fake news and information. 
 This challenge is a representation about ‘Veracity’ in Big Data.
 """
             if passed:
