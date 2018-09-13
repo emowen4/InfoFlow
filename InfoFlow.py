@@ -182,6 +182,7 @@ class Challenge:
 
     def decline(self, p: 'PlayerInfo') -> None:
         p.money -= 100
+        p.challenge_count += 1
         p.difficulty_level -= 1
 
     def cancel(self, p: 'PlayerInfo') -> None:
