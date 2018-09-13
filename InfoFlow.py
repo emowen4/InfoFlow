@@ -16,15 +16,15 @@ PROBLEM_DESC = (
     '''Welcome to Info Flow!
     In the year 2025 when technology is highly developed, types of jobs that were completed by people are now
 replaced by artificial intelligence. Our lives have become more convenient, but people are still struggling for livings.
-A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize 
-complicated information using human power. However, once you choose this platform, all your personal information, 
-including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users. 
+A platform gradually emerges which offers huge amounts of money for employees. The platform aims to categorize
+complicated information using human power. However, once you choose this platform, all your personal information,
+including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users.
 Some of those challenges are complicated, ranging from physical work to careful thinking.
-------------------------------------------------------------------------------------------------------------------------
-    You are a college student. Yesterday, there was a group of people breaking into your house and telling you that 
-your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt. 
-You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time, 
-you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges 
+--------------------------------------------------------------------------------------------------------------------------
+    You are a college student. Yesterday, there was a group of people breaking into your house and telling you that
+your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt.
+You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time,
+you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges
 to pay off your debt. Today, you will be facing your first challenge from this platform. What will that be...?'''
 )
 # </METADATA>
@@ -33,31 +33,36 @@ to pay off your debt. Today, you will be facing your first challenge from this p
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from random import choice
-from typing import List, Dict
+from random import randrange, choice
+from typing import List, Dict, Set
 
 
 class Debug:
-    debug = False  # DEBUG
+    debug = True  # DEBUG
 
 
 class PlayerInfo:
     def __init__(self, difficulty_level: int = 0,
                  score: int = 0,
                  finished: int = 0,
-                 money: int = 0,
+                 unfinished: int = 0,
+                 challenge_count: int = 0,
+                 money: int = 0 if not Debug.debug else 100,
                  debt: int = 1000 if not Debug.debug else 100,
-                 # debt: int = 100,  # DEBUG
                  energy: int = 100,
+                 info_got: int = 0,
                  current_challenge: 'Challenge' = None,
                  set_game_finished: bool = False,
                  is_game_finished: bool = False):
         self._difficulty_level = difficulty_level
         self.score = score
         self.finished = finished
+        self.canceled = unfinished
+        self.challenge_count = challenge_count
         self.money = money
         self._debt = debt
         self._energy = energy
+        self.info_got = info_got
         self.current_challenge = current_challenge
         self.set_game_finished = set_game_finished
         self.is_game_finished = is_game_finished
@@ -89,6 +94,9 @@ class PlayerInfo:
     def has_accepted_challenge(self):
         return self.current_challenge is not None
 
+    def add_info_got(self, num: int):
+        self.info_got += num
+
     def __eq__(self, other):
         if other is self:
             return True
@@ -97,8 +105,12 @@ class PlayerInfo:
         return (self.energy is other.energy
                 and self.score is other.score
                 and self.finished is other.finished
+                and self.canceled is other.unfinished
+                and self.challenge_count is other.challenge_count
                 and self.money is other.money
                 and self.debt is other.debt
+                and self.energy is other.energy
+                and self.info_got is other.info_got
                 and self.difficulty_level is other.difficulty_level
                 and self.has_accepted_challenge() is other.has_accepted_challenge()
                 and self.current_challenge is other.current_challenge
@@ -114,14 +126,15 @@ class PlayerInfo:
         return (f"Player Stats:"
                 f"\tEnergy: {self.energy:3}▕{energy_blocks}{energy_rest}{energy_spaces}▏"
                 f"\tScore: {self.score}"
-                f"\tFinished Challenges: {self.finished}"
+                f"\tFinished/All Challenges: {self.finished}/{self.challenge_count}"
                 f"\tMoney/Debt: ${self.money}/${self.debt}"
                 f"\tDifficulty Level: {self.difficulty_level}"
                 f"\tHas accepted challenge: {'✔' if self.has_accepted_challenge() else '×'}")
 
     @staticmethod
     def clone(info: 'PlayerInfo'):
-        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.money, info.debt, info.energy,
+        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.canceled, info.challenge_count,
+                          info.money, info.debt, info.energy, info.info_got,
                           info.current_challenge, info.set_game_finished, info.is_game_finished)
 
 
@@ -175,11 +188,17 @@ class Challenge:
     def submit(self, p: 'PlayerInfo') -> None:
         raise NotImplementedError()
 
-    def set_finished(self, p: 'PlayerInfo'):
+    def __set_score_and_money(self, p: 'PlayerInfo', correct_level: float):
+        p.score += self.level * Challenge.score_correct_multiplier_level
+        p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
+
+    def set_finished(self, p: 'PlayerInfo', correct_level: float):
+        self.__set_score_and_money(p, correct_level)
         p.finished += 1
         p.difficulty_level += 1
 
-    def set_unfinished(self, p: 'PlayerInfo'):
+    def set_unfinished(self, p: 'PlayerInfo', correct_level: float):
+        # self.__set_score_and_money(p, correct_level)
         p.difficulty_level -= 1
 
     def energy_consume(self):
@@ -233,6 +252,10 @@ class State:
     def store_operator(self, op: 'Operator'):
         self.selected_operator = op
 
+    def set_goal_state(self):
+        self.is_goal_state = True
+        return self
+
     def has_challenge(self) -> bool:
         return self.challenge is not None
 
@@ -250,26 +273,35 @@ class State:
         if not self.player.is_game_finished and self.__is_goal():
             ns = ChallengeMenuState(self)
             ns.player.set_game_finished = True
-            return MessageDisplayState(ns, "Congratulations!", self.goal_message())
+            return MessageDisplayState.show_message(ns, "Congratulations!", self.goal_message()).set_goal_state()
         return self
 
     def __is_goal(self) -> bool:
         return self.player.debt is 0
 
     def is_goal(self) -> bool:
-        if not self.player.is_game_finished and self.player.set_game_finished and self.__is_goal():
+        if not self.player.is_game_finished and self.player.set_game_finished and "is_goal_state" in self.__dict__ and self.__is_goal():
             self.player.is_game_finished = True
             return True
         else:
             return False
 
     def goal_message(self) -> str:
-        return (f"You makes the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
-                f"You payed all the debt and there is {self.player.money} left.")
-
-    def lose_message(self) -> str:
-        return (f"You didn't make the goal in {self.round}{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
-                f"You have {self.player.money} and {self.player.debt} is needed to pay.")
+        declined = self.player.challenge_count - self.player.finished - self.player.canceled
+        return (f"You makes the goal in {self.round} round{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
+                f"You payed all the debt and there is ${self.player.money} left. Throughout the game, "
+                + ("no challenge is" if self.player.challenge_count is 0 else f"{self.player.challenge_count} challenge{'s are' if self.player.challenge_count > 1 else ' is'}") + " accepted, "
+                + ("no challenge is" if self.player.canceled is 0 else f"{self.player.canceled} challenge{'s are' if self.player.challenge_count > 1 else ' is'}") + " canceled, "
+                + ("and no challenge is" if declined is 0 else f"and {declined} challenge{'s are' if declined > 1 else ' is'}") + " declined. "
+                + f"You read {self.player.info_got} pieces of information during this game. "
+                  f"Maybe you did not realize, but here is how much information you just received "
+                  f"(not reach since you are actually dealing with them) in one game. "
+                  f"Will you feel tired after finishing one day’s work but actually not having too much workload? "
+                  f"It is mostly because you are reaching information while you did not notice. "
+                  f"Emails, videos, Facebook and twitter: all kinds of information are attacking your brain. "
+                  f"Also, this is why we make ‘Info Flow’ for this wicked problem (information overload), "
+                  f"and here is a tip for all of you who played this game:\n"
+                  f"    Stop using your smart device for a while and let your brain take a break.")
 
     def describe_state(self) -> str:
         return ""
@@ -362,12 +394,12 @@ class ChallengeState(State):
 
 
 class MessageDisplayState(State):
-    def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, show_icon: bool = True, old: 'State' = None):
+    def __init__(self, continue_to: 'State' = None, title: str = None, info: str = None, show_title: bool = True, old: 'State' = None):
         super().__init__(old)
         self.continue_to = continue_to
         self.title = title
         self.info = info
-        self.show_icon = show_icon
+        self.show_title = show_title
 
     def is_applicable_operator(self, op: 'Operator'):
         return op.id is OperatorIds.MENU_CONTINUE
@@ -377,22 +409,20 @@ class MessageDisplayState(State):
         return self.continue_to
 
     def describe_state(self) -> str:
-        return f"{self.title}\n{self.info}"
+        if self.show_title:
+            return f"{self.title}\n{self.info}"
+        else:
+            return self.info
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
 
-    def more(self, title: str = None, info: str = None, show_icon: bool = True):
-        m = MessageDisplayState.show_message(self.continue_to, title, info, show_icon)
-        self.continue_to = m
-        return self
-
-    def before(self, title: str = None, info: str = None, show_icon: bool = True):
-        return MessageDisplayState.show_message(self, title, info, show_icon)
+    def before(self, title: str = None, info: str = None, show_title: bool = True):
+        return MessageDisplayState.show_message(self, title, info, show_title)
 
     @staticmethod
-    def show_message(continue_to: 'State', title: str = None, info: str = None, show_icon: bool = True, old: 'State' = None):
-        return MessageDisplayState(continue_to, title, info, show_icon, old=old if old else continue_to)
+    def show_message(continue_to: 'State', title: str = None, info: str = None, show_title: bool = True, old: 'State' = None):
+        return MessageDisplayState(continue_to, title, info, show_title, old=old if old else continue_to)
 
 
 class NewsInformation:
@@ -549,12 +579,10 @@ class NewsSortingChallenge(Challenge):
                     p.score += NewsSortingChallenge.score_incorrect_info
         correct_level = correct / len(self.to_sort)
         if correct_level >= .8:  # Require at least 80% of the information are sorted correctly to get success in this challenge
-            p.score += self.level * Challenge.score_correct_multiplier_level
-            p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
-            self.set_finished(p)
+            self.set_finished(p, correct_level)
             return True, correct_level
         else:
-            self.set_unfinished(p)
+            self.set_unfinished(p, correct_level)
             return False, correct_level
 
     def __str__(self):
@@ -595,14 +623,14 @@ class NewsSortingChallengeState(ChallengeState):
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
             philosophy = """Here is why we made this challenge.
-Just like what system did for spam emails, we receive useless information every day in our lives.  
+Just like what system did for spam emails, we receive useless information every day in our lives.
 Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
-This challenge is a representation about ‘Variety’ in Big Data."""
+This challenge is a representation about ‘Volume’ in Big Data."""
             if passed:
-                return (MessageDisplayState.show_message(ns, "", philosophy)
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
             else:
-                return (MessageDisplayState.show_message(ns, "", philosophy)
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Nice try!", f"You only have a {int(corr * 100)}% completion."))
 
     def describe_state(self) -> str:
@@ -690,7 +718,7 @@ class MythBusterChallenge(Challenge):
         Myth("The largest recorded snowflake was in Keogh, MT during year 1887, and was inches wide.", True),
         Myth("You burn more calories sleeping than you do watching television.", True),
         Myth("There are more lifeforms living on your skin than there are people on the planet.", True),
-        Myth("If you believe that you’re truly one in a million, there are still approximately 7184 more people out there just like you.", True),
+        Myth("If you believe that you’re truly one in a million, there are still approximately 7,18more people out there just like you.", True),
         Myth("A single cloud can weight more than million pounds.", True),
         Myth("A human will eat on average 70 assorted insects and 10 spiders while sleeping.", True),
         Myth("James Buchanan, the 15th U. president continuously bought slaves with his own money in order to free them.", True),
@@ -774,12 +802,10 @@ class MythBusterChallenge(Challenge):
                 correct += 1
         correct_level = correct / len(self.myths)
         if correct_level >= self.level_correct_required[self.level]:  # Require at least a specific amount of the information are sorted correctly to get success in this challenge
-            p.score += self.level * Challenge.score_correct_multiplier_level
-            p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
-            self.set_finished(p)
+            self.set_finished(p, correct_level)
             return True, correct_level
         else:
-            self.set_unfinished(p)
+            self.set_unfinished(p, correct_level)
             return False, correct_level
 
     def clone(self):
@@ -815,33 +841,202 @@ class MythBusterChallengeState(ChallengeState):
         else:
             ns = ChallengeMenuState(self)
             ret = ns.player.current_challenge.guess(self.player.current_challenge.myths[self.myth_index], op.id is MythBusterChallenge.provided_ops[0].id)
+            info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
+            philosophy = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I fund them on the internet, neither. 
+Actually, maybe you did not realize, but we are surrounded by fake news and information. 
+This challenge is a representation about ‘Veracity’ in Big Data."""
             passed, corr = ns.player.current_challenge.submit(ns.player)
             ns.finish_challenge()
-            info = "It is a truth!" if self.player.current_challenge.myths[self.myth_index].is_fact else "It is a myth!"
-            reason = """It is hard to identify all those myths, right? I cannot believe some of them are myths when I found them on the internet, neither. 
-Actually, maybe you did not realize, we are surrounded by fake news and information. 
-This challenge is a representation about ‘Veracity’ in Big Data.
-"""
             if passed:
-                # return MessageDisplayState(
-                #     MessageDisplayState(ns, "Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!", old=ns),
-                #     "Correct!" if ret else "Incorrect!", info, old=ns
-                # )
-                return (MessageDisplayState.show_message(ns, "", reason)
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
                         .before("Correct!" if ret else "Incorrect!", info))
             else:
-                # return MessageDisplayState(
-                #     MessageDisplayState(ns, "Nice try!", f"You only have a {int(corr * 100)}% completion.", old=ns),
-                #     "Correct!" if ret else "Incorrect!", info, old=ns
-                # )
-                return (MessageDisplayState.show_message(ns, "", reason)
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Nice try!", f"You only have a {int(corr * 100)}% completion.")
                         .before("Correct!" if ret else "Incorrect!", info))
 
     def describe_state(self) -> str:
         return (f"Myth's Content: {self.player.current_challenge.myths[self.myth_index]}"
                 f"\t(Myth Guessed: {self.myth_index}/{len(self.player.current_challenge.myths)})\nFACT or MYTH?")
+
+    def __str__(self):
+        return f"{super().__str__()}\n{self.describe_state()}"
+
+
+class CocoChallenge(Challenge):
+    provided_ops = list([Operator("First", "COCO_FIRST"), Operator("Second", "COCO_SECOND"), Operator("Third", "COCO_THIRD")])
+    all_sentences = [
+        ["A woman weighs the positive and negative aspects of accepting a new job.",
+         "A woman does not correct a stranger who mistakes her for someone else",
+         "A woman impersonates someone else to seek revenge on an acquaintance."],
+        ["It acknowledges that a practice favored by the author of the passage has some limitations.",
+         "It illustrates with detail the arguments made in the first two paragraphs of the passage",
+         "It gives an overview of a problem that has not been sufficiently addressed by the experts mentioned in the passage."],
+        ["A new discovery leads to reconsideration of a theory; a classic study is adapted, and the results are summarized.",
+         "An experiment is proposed but proves unworkable; a less ambitious experiment is attempted, and it yields data that give rise to a ne",
+         "An anomaly is observed and simulated experimentally; the results are compared with previous findings, and a novel hypothesis is prop"],
+        ["Women are not naturally suited for the exercise of civil and political rights.",
+         "Men and women possess similar degrees of reasoning ability.",
+         "Women do not need to remain confined to their traditional family duties."],
+        ["Honeybees that are exposed to both pyrethrums and mites are likely to develop a secondary infection by a virus, a bacterium, or a fu",
+         "Beekeepers who feed their honeybee colonies a diet of a single crop need to increase the use of insecticides to prevent mite infesta",
+         "A honeybee diet that includes pyrethrums results in honeybee colonies that are more resistant to mite infestations."],
+        ["Aside from lowering worker productivity,artificial light sources are also costly, typically constituting anywhere from 25 to 50 perc",
+         "The cost of artificial light sources, aside from lowering worker productivity, typically constitutes anywhere from 25 to 50 percent",
+         "Typically constituting 25 to 50 percent of a building’s energy use, artificial light sources lower worker productivity and are costl"],
+        ["The growth of Harvey’s business coincided with the expansion of the Santa Fe Railway, which served large sections of the American We",
+         "Harvey would end up opening dozens of restaurants and dining cars, plus 15 hotels, over his lucrative career.",
+         "These benefits enabled the Harvey Girls to save money and build new and exciting lives for themselves in the so-called Wild West."],
+        ["Many of the improvements to fruit quality they have discovered so far have required trade-offs in other properties of the fruit.",
+         "For now many fruit sellers must weigh the relative values of aroma, color, and freshness when deciding whether to use 1-MCP.",
+         "It must be acknowledged that 1-MCP, despite some inadequacies, has enabled the fruit industry to ship and store fruit in ways that w"],
+        ["A character describes his dislike for his new job and considers the reasons why.",
+         "Two characters employed in the same office become increasingly competitive.",
+         "A young man regrets privately a choice that he defends publicly."],
+        ["Fair trade coffee consistently earned greater profits than regular coffee earned.",
+         "The profits earned from regular coffee did not fluctuate.",
+         "Fair trade coffee profits increased between 2004 and 2006."],
+        ["Expected tax increases due to demand for public works.",
+         "Economic hardship due to promises made in past years.",
+         "Greater overall prosperity due to an increased inner-city tax base."],
+        ["Large numbers of people moved from suburban areas to urban areas in the 1990s.",
+         "Growth rates fell in smaller metropolitan areas in the 1990s.",
+         "Large numbers of people moved from metropolitan areas to nonmetropolitan areas in the 1990s."],
+        ["One character argues with another character who intrudes on her home.",
+         "One character receives a surprising request from another character.",
+         "One character reminisces about choices she has made over the years."],
+        ["Computer-savvy children tend to demonstrate better hand-eye coordination than do their parents.",
+         "Those who criticize consumers of electronic media tend to overreact in their criticism.",
+         "Improved visual-spatial skills do not generalize to improved skills in other areas."],
+        ["Acting on empathy can be counterproductive.",
+         "Ethical economics is defined by character.",
+         "Ethical economics is still possible."],
+        ["The greatest cooling during the Little Ice Age occurred hundreds of years after the temperature peaks of the Medieval Warm Period.",
+         "The sharp decline in temperature supports the hypothesis of an equatorial volcanic eruption in the Middle Ages.",
+         "Pyroclastic flows from volcanic eruptions continued for hundreds of years after the eruptions had ended."],
+        ["GTC has invested a great deal of money in the microinjection technique",
+         "GTC’s milking parlors have significantly increased milk production.",
+         "ATryn has proved to be a financially beneficial product for GTC."],
+        ["Less growth in metropolitan areas of all sizes than had taken place in the 1990s.",
+         "More growth in small metropolitan areas than in large metropolitan areas.",
+         "A significant decline in the population of small metropolitan areas compared to the 1980s"],
+        ["The 2010 census demonstrated a sizeable growth in the number of middle-class families moving into inner cities.",
+         "The 2010 census is not a reliable instrument for measuring population trends in American cities.",
+         "Population growth and demographic inversion are distinct phenomena, and demographic inversion is evident in many American cities."],
+        ["The North Pole is farther away than the cities usually reached by train.",
+         "People often travel from one city to another without considering the implications.",
+         "Reaching the North Pole has no foreseeable benefit to humanity."]
+    ]
+
+    score_correct_sentences = 10
+    score_incorrect_sentences = -20
+    level_correct_required = [.75, .5, .85, .9, .95]
+
+    def __init__(self, level: int, sentences: 'Dict[int, (int, int)]', to_remember: 'List[int]', remembered: 'List[int]'):
+        super().__init__("Coco Challenge", level)
+        #  Stores {Index from 0 : (Index in CocoChallenge.all_sentences, Which one to remember)}
+        self.sentences = sentences
+        # Stores Index in self.sentences
+        self.to_remember = to_remember
+        # Stores {Index from 0 : Selected choices}
+        self.remembered = remembered
+
+    def submit(self, p: 'PlayerInfo'):
+        correct = 0
+        for i in range(len(self.remembered)):
+            if self.sentences[i][1] == self.remembered[i]:
+                correct += 1
+                p.score += CocoChallenge.score_correct_sentences
+            else:
+                p.score -= CocoChallenge.score_incorrect_sentences
+        correct_level = correct / len(self.to_remember)
+        if correct_level >= CocoChallenge.level_correct_required[self.level]:
+            self.set_finished(p, correct_level)
+            return True, correct_level
+        else:
+            self.set_unfinished(p, correct_level)
+            return False, correct_level
+
+    def clone(self):
+        return CocoChallenge(self.level, deepcopy(self.sentences), deepcopy(self.to_remember), deepcopy(self.remembered))
+
+    @staticmethod
+    def random(level: int) -> "CocoChallenge":
+        count = (level + 2) * 2 if not Debug.debug else 1
+        count_tr = level + 1 if not Debug.debug else 1
+        sentence_set, sentences, to_remember = set(), {}, []
+        c = 0
+        while len(sentence_set) < count:
+            r = randrange(0, len(CocoChallenge.all_sentences))
+            if r not in sentence_set:
+                sentence_set.add(r)
+                sentences[c] = (r, randrange(0, 3))
+                c += 1
+                if len(to_remember) < count_tr:
+                    to_remember.append(c)
+        return CocoChallenge(level, sentences, to_remember, {})
+
+
+class CocoChallengeState(ChallengeState):
+    def __init__(self, old: 'State' = None):
+        super().__init__(old)
+        if old and isinstance(old, CocoChallengeState):
+            self.phase_index = old.phase_index
+            self.coco_index = old.coco_index + 1
+        else:
+            self.phase_index = 0
+            self.coco_index = 0
+
+    def is_applicable_operator(self, op: 'Operator'):
+        return (super().is_applicable_operator(op)
+                or (self.phase_index is 0 and op.id is OperatorIds.MENU_CONTINUE)
+                or (self.phase_index is 1 and op in CocoChallenge.provided_ops))
+
+    def apply_operator(self, op: 'Operator'):
+        self.store_operator(op)
+        if super().is_applicable_operator(op):
+            return super().apply_operator(op)
+        if self.phase_index is 0:
+            ns = CocoChallengeState(self)
+            if ns.coco_index == len(ns.player.current_challenge.sentences):
+                ns.phase_index = 1
+                ns.coco_index = 0
+            return MessageDisplayState.show_message(ns, "Warning~", "Now is the time to test your memories. Hope you still remember these information!")
+        elif self.phase_index is 1:
+            if self.coco_index + 1 < len(self.player.current_challenge.to_remember):
+                ns = CocoChallengeState(self)
+                ns.player.current_challenge.remembered.append(
+                    0 if op.id is CocoChallenge.provided_ops[0]
+                    else 1 if op.id is CocoChallenge.provided_ops[1]
+                    else 2 if op.id is CocoChallenge.provided_ops[2]
+                    else -1)
+                return ns
+            else:
+                ns = ChallengeMenuState(self)
+                ns.player.current_challenge.remembered[self.coco_index] = (
+                    0 if op.id is CocoChallenge.provided_ops[0].id
+                    else 1 if op.id is CocoChallenge.provided_ops[1].id
+                    else 2 if op.id is CocoChallenge.provided_ops[2].id
+                    else -1)
+                philosophy = """To be honest, all sentences are from the Official Guide of SAT test. So you can relax since you wont see things like this in your daily life ^^.
+But it is still a miniature of all information we receive. Just imagine, our brains are exposed to approximately 34 Gigabyte of information while most of them are spam.
+This challenge is a representation about 'Volume' in Big Data."""
+                passed, corr = ns.player.current_challenge.submit(ns.player)
+                ns.finish_challenge()
+                if passed:
+                    return (MessageDisplayState.show_message(ns, "", philosophy, False)
+                            .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
+                else:
+                    return (MessageDisplayState.show_message(ns, "", philosophy, False)
+                            .before("Nice try!", f"You only have a {int(corr * 100)}% completion."))
+
+    def describe_state(self):
+        s = self.player.current_challenge.sentences[self.coco_index]
+        if self.phase_index is 0:
+            return f"Memorize this information:\n\t{CocoChallenge.all_sentences[s[0]][s[1]]}"
+        elif self.phase_index is 1:
+            return f"Which was shown before in Memorization #{self.coco_index}:\n\t{self.player.current_challenge.all_sentences[s[0]]}"
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
@@ -854,7 +1049,10 @@ class Challenges:
          NewsSortingChallenge),
         (lambda level: MythBusterChallenge.random(level),
          lambda old: MythBusterChallengeState(old=old),
-         MythBusterChallenge)
+         MythBusterChallenge),
+        (lambda level: CocoChallenge.random(level),
+         lambda old: CocoChallengeState(old=old),
+         CocoChallenge)
     ]
 
 
