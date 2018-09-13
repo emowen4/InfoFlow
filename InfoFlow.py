@@ -46,6 +46,7 @@ class PlayerInfo:
                  score: int = 0,
                  finished: int = 0,
                  unfinished: int = 0,
+                 canceled: int = 0,
                  challenge_count: int = 0,
                  money: int = 0 if not Debug.debug else 100,
                  debt: int = 1000 if not Debug.debug else 100,
@@ -57,7 +58,8 @@ class PlayerInfo:
         self._difficulty_level = difficulty_level
         self.score = score
         self.finished = finished
-        self.canceled = unfinished
+        self.unfinished = unfinished
+        self.canceled = canceled
         self.challenge_count = challenge_count
         self.money = money
         self._debt = debt
@@ -105,7 +107,8 @@ class PlayerInfo:
         return (self.energy is other.energy
                 and self.score is other.score
                 and self.finished is other.finished
-                and self.canceled is other.unfinished
+                and self.unfinished is other.unfinished
+                and self.canceled is other.canceled
                 and self.challenge_count is other.challenge_count
                 and self.money is other.money
                 and self.debt is other.debt
@@ -133,7 +136,7 @@ class PlayerInfo:
 
     @staticmethod
     def clone(info: 'PlayerInfo'):
-        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.canceled, info.challenge_count,
+        return PlayerInfo(info.difficulty_level, info.score, info.finished, info.unfinished, info.canceled, info.challenge_count,
                           info.money, info.debt, info.energy, info.info_got,
                           info.current_challenge, info.set_game_finished, info.is_game_finished)
 
@@ -184,6 +187,8 @@ class Challenge:
     def cancel(self, p: 'PlayerInfo') -> None:
         p.score += Challenge.score_cancel_multiplier_level * self.level
         p.money += Challenge.money_cancel_multiplier_level * self.level
+        p.canceled += 1
+        p.challenge_count += 1
 
     def submit(self, p: 'PlayerInfo') -> None:
         raise NotImplementedError()
@@ -195,17 +200,20 @@ class Challenge:
     def set_finished(self, p: 'PlayerInfo', correct_level: float):
         self.__set_score_and_money(p, correct_level)
         p.finished += 1
+        p.challenge_count += 1
         p.difficulty_level += 1
 
     def set_unfinished(self, p: 'PlayerInfo', correct_level: float):
         # self.__set_score_and_money(p, correct_level)
+        p.unfinished += 1
+        p.challenge_count += 1
         p.difficulty_level -= 1
 
     def energy_consume(self):
         return (self.level + 5) * Challenge.energy_accept_multiplier_level
 
     def preview(self) -> str:
-        return f"{self.name}(Level: {self.level + 1})"
+        return f"{self.name}(Level: {self.level})"
 
     def __str__(self):
         return self.preview()
@@ -287,13 +295,14 @@ class State:
             return False
 
     def goal_message(self) -> str:
-        declined = self.player.challenge_count - self.player.finished - self.player.canceled
+        declined = self.player.challenge_count - self.player.finished - self.player.unfinished - self.player.canceled
         return (f"You makes the goal in {self.round} round{'s' if self.round > 1 else ''} with a score of {self.player.score}. "
                 f"You payed all the debt and there is ${self.player.money} left. Throughout the game, "
+                f"you solved {self.player.finished} challenges in total, "
                 + ("no challenge is" if self.player.challenge_count is 0 else f"{self.player.challenge_count} challenge{'s are' if self.player.challenge_count > 1 else ' is'}") + " accepted, "
                 + ("no challenge is" if self.player.canceled is 0 else f"{self.player.canceled} challenge{'s are' if self.player.challenge_count > 1 else ' is'}") + " canceled, "
                 + ("and no challenge is" if declined is 0 else f"and {declined} challenge{'s are' if declined > 1 else ' is'}") + " declined. "
-                + f"You read {self.player.info_got} pieces of information during this game. "
+                + f"You read about {self.player.info_got + 40} pieces of information during this game. "
                   f"Maybe you did not realize, but here is how much information you just received "
                   f"(not reach since you are actually dealing with them) in one game. "
                   f"Will you feel tired after finishing one day’s work but actually not having too much workload? "
@@ -572,6 +581,7 @@ class NewsSortingChallenge(Challenge):
         correct = 0
         for cat, infos in self.sorted.items():
             for info in infos:
+                p.add_info_got(1)
                 if info.category == cat:
                     p.score += NewsSortingChallenge.score_correct_info
                     correct += 1
@@ -799,6 +809,7 @@ class MythBusterChallenge(Challenge):
     def submit(self, p: 'PlayerInfo'):
         correct = 0
         for myth, guess in self.guesses.items():
+            p.add_info_got(1)
             if myth.is_fact == guess:
                 correct += 1
         correct_level = correct / len(self.myths)
@@ -946,6 +957,7 @@ class CocoChallenge(Challenge):
     def submit(self, p: 'PlayerInfo'):
         correct = 0
         for i in range(len(self.remembered)):
+            p.add_info_got(3)
             if self.sentences[i][1] == self.remembered[i]:
                 correct += 1
                 p.score += CocoChallenge.score_correct_sentences
@@ -1003,7 +1015,9 @@ class CocoChallengeState(ChallengeState):
             if ns.coco_index == len(ns.player.current_challenge.sentences):
                 ns.phase_index = 1
                 ns.coco_index = 0
-            return MessageDisplayState.show_message(ns, "Warning~", "Now is the time to test your memories. Hope you still remember these information!")
+                return MessageDisplayState.show_message(ns, "Warning~", "Now is the time to test your memories. Hope you still remember these information!")
+            else:
+                return ns
         elif self.phase_index is 1:
             if self.coco_index + 1 < len(self.player.current_challenge.to_remember):
                 ns = CocoChallengeState(self)

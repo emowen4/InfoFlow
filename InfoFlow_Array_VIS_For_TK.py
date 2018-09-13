@@ -399,7 +399,7 @@ class MythBusterChallengeStateRenderer(StateRenderer):
         elif last_state.selected_operator.id is MythBusterChallenge.provided_ops[1].id:
             self.content_seal = "MYTH"
         else:
-            self.content_seal is None
+            self.content_seal = None
         if self.content_seal:
             self.rect_seal = display.canvas_game.create_oval(300, 200, 500, 280, fill="red", outline="red")
             self.font_seal = Style.get_font("Arial", 24, True, nocache=True)
