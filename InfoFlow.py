@@ -38,7 +38,7 @@ from typing import List, Dict, Set
 
 
 class Debug:
-    debug = True  # DEBUG
+    debug = False  # DEBUG
 
 
 class PlayerInfo:
