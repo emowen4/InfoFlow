@@ -19,8 +19,8 @@ class Style:
     color_text = "#E4E4E4"
     color_border = "#373737"
     font_name_default = "Helvetica"
-    font_size_title = 30
-    font_size_normal = 20
+    font_size_title = 24
+    font_size_normal = 16
     border_default = "ridge"
 
     loaded_fonts = {}
@@ -158,7 +158,7 @@ def initialize_tk(width, height, title):
 
 
 class StateRenderer:
-    def init(self, display: 'StateDisplay'):
+    def init(self, display: 'StateDisplay', state: 'State'):
         pass
 
     def is_static_renderer(self):
@@ -231,9 +231,9 @@ class GameStartStateRenderer(StateRenderer):
                                                x=x, y=random.randint(-10, 390), speed=speed,
                                                size=random.randint(4, 24), color=Style.color_text)
 
-    def init(self, display):
-        self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill=Style.color_text, outline=Style.color_text)
-        self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill=Style.color_text, outline=Style.color_background)
+    def init(self, display, state):
+        self.rect_outer = display.canvas_game.create_rectangle(180, 130, 420, 270, width=4, fill=Style.color_text, outline=Style.color_text)
+        self.rect_inner = display.canvas_game.create_rectangle(184, 134, 416, 266, width=2, fill=Style.color_text, outline=Style.color_background)
         self.font_title = Style.get_font("Gill Sans MT", 40, True, nocache=True)
         self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill=Style.color_background, font=self.font_title)
         self.rains = [GameStartStateRenderer.Rain.random() for _ in range(40)]
@@ -284,13 +284,13 @@ class GameStartStateRenderer(StateRenderer):
 
 
 class ChallengeMenuStateRenderer(StateRenderer):
-    def init(self, display):
+    def init(self, display, state):
         self.c_menus = [[i * 100 + 50, 100 + 50 * i, random.randint(0, 50), random.randint(0, 10), .5, .5] for i in range(4)]
         self.font = Style.get_font(Style.font_name_default, 28, italic=True)
         self.label_accept = display.canvas_game.create_text(self.c_menus[0][0], self.c_menus[0][1], anchor=W,
                                                             text=OperatorIds.CHALLENGE_ACCEPT.value, fill=Style.color_text, font=self.font)
         self.label_decline = display.canvas_game.create_text(self.c_menus[1][0], self.c_menus[1][1], anchor=W,
-                                                            text=OperatorIds.CHALLENGE_DECLINE.value, fill=Style.color_text, font=self.font)
+                                                             text=OperatorIds.CHALLENGE_DECLINE.value, fill=Style.color_text, font=self.font)
         self.label_pay = display.canvas_game.create_text(self.c_menus[2][0], self.c_menus[2][1], anchor=W,
                                                          text=OperatorIds.PAY_DEBT.value, fill=Style.color_text, font=self.font)
         self.label_finish_round = display.canvas_game.create_text(self.c_menus[3][0], self.c_menus[3][1], anchor=W,
@@ -349,15 +349,15 @@ class ChallengeMenuStateRenderer(StateRenderer):
 
 
 class MessageDisplayStateRenderer(StateRenderer):
-    def init(self, display):
+    def init(self, display, state):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         if state.show_title:
-            #display.canvas_game.create_oval(70, 50, 100, 80, fill=Style.color_text, outline=Style.color_text)
-            #display.canvas_game.create_oval(72, 52, 98, 78, fill=Style.color_background, outline=Style.color_text)
-            #display.canvas_game.create_text(85, 65, text="i", fill=Style.color_text, font=Style.get_font("Impact", 18, bold=True))
+            # display.canvas_game.create_oval(70, 50, 100, 80, fill=Style.color_text, outline=Style.color_text)
+            # display.canvas_game.create_oval(72, 52, 98, 78, fill=Style.color_background, outline=Style.color_text)
+            # display.canvas_game.create_text(85, 65, text="i", fill=Style.color_text, font=Style.get_font("Impact", 18, bold=True))
             display.canvas_game.create_text(45, 35, text=state.title, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_title, bold=True),
                                             anchor=tk.W, width=500)
             display.canvas_game.create_text(50, 60, text=state.info, fill=Style.color_text,
@@ -372,7 +372,7 @@ class MessageDisplayStateRenderer(StateRenderer):
 
 
 class NewsSortingChallengeStateRenderer(StateRenderer):
-    def init(self, display):
+    def init(self, display, state):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -382,7 +382,7 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
 
 
 class MythBusterChallengeStateRenderer(StateRenderer):
-    def init(self, display):
+    def init(self, display, state):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -419,7 +419,7 @@ class MythBusterChallengeStateRenderer(StateRenderer):
 
 
 class InstantMemChallengeStateRenderer(StateRenderer):
-    def init(self, display):
+    def init(self, display, state):
         pass
 
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
@@ -433,13 +433,47 @@ class InstantMemChallengeStateRenderer(StateRenderer):
                                             font=Style.get_font(Style.font_name_default, 24), width=550)
 
 
+class MinerChallengeStateRenderer(StateRenderer):
+    def init(self, display, state):
+        pass
+
+    def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
+        super().render(display, state, last_state)
+        self.font_text = Style.get_font(Style.font_name_default, 12, bold=True)
+        padx = 25
+        pady = 25
+        x0 = 0
+        y0 = 25
+        map_size = state.player.current_challenge.map_size
+        self.cell_width = (600 - padx * 2) / map_size
+        self.cell_height = (400 - pady * 2) / map_size
+        display.canvas_game.create_text(300, 10, text="Get to the destination, try to get useful information as much as you can, and avoid trash information!",
+                                        font=self.font_text, fill=Style.color_text, width=550, anchor=N, justify=tk.CENTER)
+        for y in range(map_size):
+            for x in range(map_size):
+                c = state.player.current_challenge.map[y][x]
+                color = None if c is 0 else "#AA0000" if c is 1 else "green" if c is 2 else "blue" if c is 4 else "brown" if c is 5 else "black"
+                text = "" if c is 0 else "Trash" if c is 1 else "Info" if c is 2 else "Player" if c is 4 else "Goal" if c is 5 else ""
+                display.canvas_game.create_rectangle(x0 + padx + x * self.cell_width, y0 + pady + y * self.cell_height,
+                                                     x0 + padx + (x + 1) * self.cell_width, y0 + pady + (y + 1) * self.cell_height,
+                                                     fill=color, outline=Style.color_foreground)
+                display.canvas_game.create_text(x0 + padx + (x + 0.5) * self.cell_width, y0 + pady + (y + 0.5) * self.cell_height,
+                                                fill=Style.color_text, text=text, font=self.font_text)
+        self.cell_player = display.canvas_game.create_rectangle(x0 + padx + state.player.current_challenge.x * self.cell_width,
+                                                                y0 + pady + state.player.current_challenge.y * self.cell_height,
+                                                                x0 + padx + (state.player.current_challenge.x + 1) * self.cell_width,
+                                                                y0 + pady + (state.player.current_challenge.y + 1) * self.cell_height,
+                                                                fill="blue", outline=Style.color_foreground)
+
+
 StateRenderer.all = {
     GameStartState: lambda: GameStartStateRenderer(),
     ChallengeMenuState: lambda: ChallengeMenuStateRenderer(),
     MessageDisplayState: lambda: MessageDisplayStateRenderer(),
     NewsSortingChallengeState: lambda: NewsSortingChallengeStateRenderer(),
     MythBusterChallengeState: lambda: MythBusterChallengeStateRenderer(),
-    InstantMemChallengeState: lambda: InstantMemChallengeStateRenderer()
+    InstantMemChallengeState: lambda: InstantMemChallengeStateRenderer(),
+    MinerChallengeState: lambda: MinerChallengeStateRenderer()
 }
 
 
@@ -477,7 +511,7 @@ def render_state(state: 'State'):
     def render():
         global in_render_state, renderer
         renderer = StateRenderer.get_renderer(type(state))
-        renderer.init(show_state_array.STATE_WINDOW)
+        renderer.init(show_state_array.STATE_WINDOW, state)
         in_render_state = False
         if show_state_array.STATE_WINDOW:
             renderer.render(show_state_array.STATE_WINDOW, state, StateRenderer.last_state)

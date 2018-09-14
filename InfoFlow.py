@@ -34,7 +34,7 @@ from copy import deepcopy
 from enum import Enum
 from itertools import chain
 from random import randrange, choice
-from typing import List, Dict, Set
+from typing import List, Dict
 
 
 class Debug:
@@ -138,7 +138,8 @@ class PlayerInfo:
     def clone(info: 'PlayerInfo'):
         return PlayerInfo(info.difficulty_level, info.score, info.finished, info.unfinished, info.canceled, info.challenge_count,
                           info.money, info.debt, info.energy, info.info_got,
-                          info.current_challenge, info.set_game_finished, info.is_game_finished)
+                          info.current_challenge.clone() if info.current_challenge else None,
+                          info.set_game_finished, info.is_game_finished)
 
 
 class OperatorIds(Enum):
@@ -194,17 +195,17 @@ class Challenge:
     def submit(self, p: 'PlayerInfo') -> None:
         raise NotImplementedError()
 
-    def __set_score_and_money(self, p: 'PlayerInfo', correct_level: float):
+    def __set_score_and_money(self, p: 'PlayerInfo', correct_level: float = .8):
         p.score += self.level * Challenge.score_correct_multiplier_level
         p.money += Challenge.challenge_rewards[self.level] * Challenge.reward_completion_multiplier[int(correct_level * 5)]
 
-    def set_finished(self, p: 'PlayerInfo', correct_level: float):
+    def set_finished(self, p: 'PlayerInfo', correct_level: float = .8):
         self.__set_score_and_money(p, correct_level)
         p.finished += 1
         p.challenge_count += 1
         p.difficulty_level += 1
 
-    def set_unfinished(self, p: 'PlayerInfo', correct_level: float):
+    def set_unfinished(self, p: 'PlayerInfo', correct_level: float = 4):
         # self.__set_score_and_money(p, correct_level)
         p.unfinished += 1
         p.challenge_count += 1
@@ -268,7 +269,7 @@ class State:
     def has_challenge(self) -> bool:
         return self.challenge is not None
 
-    def finish_challenge(self) -> None:
+    def remove_challenge(self) -> None:
         self.challenge = None
         self.player.current_challenge = None
 
@@ -282,7 +283,9 @@ class State:
         if not self.player.is_game_finished and self.__is_goal():
             ns = ChallengeMenuState(self)
             ns.player.set_game_finished = True
-            return MessageDisplayState.show_message(ns, "Congratulations!", self.goal_message()).set_goal_state()
+            goal_msgs = self.goal_message().split("\n    ")
+            return (MessageDisplayState.show_message(ns, "Congratulations!", goal_msgs[1]).set_goal_state()
+                    .before("Congratulations!", goal_msgs[0]))
         return self
 
     def __is_goal(self) -> bool:
@@ -311,7 +314,11 @@ class State:
                   f"Emails, videos, Facebook and twitter: all kinds of information are attacking your brain. "
                   f"Also, this is why we make ‘Info Flow’ for this wicked problem (information overload), "
                   f"and here is a tip for all of you who played this game:\n"
-                  f"    Stop using your smart device for a while and let your brain take a break.")
+                  f"    First, Stop using your smart device for a while and let your brain take a break. "
+                  f"Besides, do not process too much data/task at the same time. Learning to make planners, shifting subjects you are working on are also good ideas. "
+                  f"Make sure, sometimes you have to reject reaching some information once you feel like that is too much for you to deal with. Once you feel tired, "
+                  f"please temporary escape: turn off your smart device and let your brain rest for a bit.\n\n"
+                  f"More tips about how to deal with information overload, check https://www.workzone.com/blog/information-overload/")
 
     def describe_state(self) -> str:
         return ""
@@ -321,7 +328,7 @@ class State:
             return True
         if s is None:
             return False
-        return type(self) is type(s) and self.player == s.info and self.challenge == s.challenge and self.round == s.round
+        return type(self) is type(s) and self.player == s.player and self.challenge == s.challenge and self.round == s.round
 
     def __str__(self):
         return f"Round {self.round}\n{self.player}"
@@ -400,6 +407,7 @@ class ChallengeState(State):
         if op.id is OperatorIds.CHALLENGE_CANCEL:
             ns = ChallengeMenuState(self)
             ns.player.current_challenge.cancel(ns.player)
+            ns.remove_challenge()
             return ns
 
 
@@ -601,7 +609,7 @@ class NewsSortingChallenge(Challenge):
                 "\n".join([f"\t{'{0:3}'.format(ind)}: {info.content}" for ind, info in enumerate(self.to_sort)]))
 
     def clone(self) -> 'NewsSortingChallenge':
-        return NewsSortingChallenge(self.level, self.to_sort, self.categories, self.sorted)
+        return NewsSortingChallenge(self.level, deepcopy(self.to_sort), deepcopy(self.categories), deepcopy(self.sorted))
 
     @staticmethod
     def random(level) -> 'NewsSortingChallenge':
@@ -632,7 +640,7 @@ class NewsSortingChallengeState(ChallengeState):
             ns = ChallengeMenuState(self)
             ns.player.current_challenge.sort_to(self.player.current_challenge.to_sort[self.news_index], op.id)
             passed, corr = ns.player.current_challenge.submit(ns.player)
-            ns.finish_challenge()
+            ns.remove_challenge()
             philosophy = """Here is why we made this challenge.
 Just like what system did for spam emails, we receive useless information every day in our lives.
 Categorizing news is just one small aspect about information, but the point is that we need to learn to accept useful information while refusing the spam ones.
@@ -859,7 +867,7 @@ class MythBusterChallengeState(ChallengeState):
 Actually, maybe you did not realize, we are surrounded by fake news and information. 
 This challenge is a representation of ‘Veracity’ in Big Data."""
             passed, corr = ns.player.current_challenge.submit(ns.player)
-            ns.finish_challenge()
+            ns.remove_challenge()
             if passed:
                 return (MessageDisplayState.show_message(ns, "", philosophy, False)
                         .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!")
@@ -1039,7 +1047,7 @@ class InstantMemChallengeState(ChallengeState):
 But it is still a miniature of all information we receive. Just imagine, we are exposed to approximately 34 gigabytes of information while most of them are spam.
 This challenge is a representation of 'Volume' in Big Data."""
                 passed, corr = ns.player.current_challenge.submit(ns.player)
-                ns.finish_challenge()
+                ns.remove_challenge()
                 if passed:
                     return (MessageDisplayState.show_message(ns, "", philosophy, False)
                             .before("Great job!", f"You solved the challenge with a {int(corr * 100)}% completion!"))
@@ -1059,6 +1067,117 @@ This challenge is a representation of 'Volume' in Big Data."""
         return f"{super().__str__()}\n{self.describe_state()}"
 
 
+class MinerChallenge(Challenge):
+    provided_ops = [Operator("Go North", "MINER_NORTH"), Operator("Go South", "MINER_SOUTH"), Operator("Go East", "MINER_EAST"), Operator("Go West", "MINER_WEST")]
+
+    def __init__(self, level: int, map, map_size, x, y, useful_info_collected: int, useless_info_collected: int, steps: int):
+        super().__init__("Miner Challenge", level)
+        self.map_size = map_size
+        self.x, self.y = x, y
+        self.map = map
+        self.useful_info_collected = useful_info_collected
+        self.useless_info_collected = useless_info_collected
+        self.steps = steps
+
+    def submit(self, p: 'PlayerInfo'):
+        score = self.useful_info_collected * 2 - self.useless_info_collected
+        score *= 15
+        score -= self.steps * 3
+        p.score += score
+        if score > 0:
+            self.set_finished(p)
+        else:
+            self.set_unfinished(p)
+        return score > 0, score
+
+    def can_move(self, off_x: int, off_y: int):
+        return 0 <= self.x + off_x < self.map_size and 0 <= self.y + off_y < self.map_size
+
+    def move(self, off_x: int, off_y: int):
+        if self.can_move(off_x, off_y):
+            self.x += off_x
+            self.y += off_y
+            info = self.map[self.y][self.x]
+            if info is 2:
+                self.useful_info_collected += 1
+            elif info is 1:
+                self.useless_info_collected += 1
+            self.map[self.y][self.x] = 0
+            self.steps += 1
+
+    def is_at_dest(self):
+        return self.y + 1 == self.map_size and self.x + 1 == self.map_size
+
+    def clone(self):
+        return MinerChallenge(self.level, deepcopy(self.map), self.map_size, self.x, self.y, self.useful_info_collected, self.useless_info_collected, self.steps)
+
+    @staticmethod
+    def random(level: int):
+        map_size = 5 + level if not Debug.debug else 9
+        # map[Y][X], map[Row][Col]
+        # 0 = Blank
+        # 1 = Useless Info
+        # 2 = Useful Info
+        # 4 = Player
+        # 5 = Destination
+        map = [[1 + randrange(0, 3) % 2 if randrange(1, 11) > 4 else 0 for _ in range(map_size)] for _ in range(map_size)]
+        map[0][0] = 0
+        map[map_size - 1][map_size - 1] = 5
+        return MinerChallenge(level, map, map_size, 0, 0, 0, 0, 0)
+
+
+class MinerChallengeState(ChallengeState):
+    def __init__(self, old: 'State' = None):
+        super().__init__(old)
+
+    def is_applicable_operator(self, op):
+        return (super().is_applicable_operator(op)
+                or (not self.player.current_challenge.is_at_dest() and
+                    ((self.player.current_challenge.can_move(0, -1) and op.id is MinerChallenge.provided_ops[0].id)
+                     or (self.player.current_challenge.can_move(0, 1) and op.id is MinerChallenge.provided_ops[1].id)
+                     or (self.player.current_challenge.can_move(1, 0) and op.id is MinerChallenge.provided_ops[2].id)
+                     or (self.player.current_challenge.can_move(-1, 0) and op.id is MinerChallenge.provided_ops[3].id))))
+
+    def apply_operator(self, op):
+        if super().is_applicable_operator(op):
+            return super().apply_operator(op)
+        ns = MinerChallengeState(self)
+        if op.id is MinerChallenge.provided_ops[0].id:
+            ns.player.current_challenge.move(0, -1)
+        elif op.id is MinerChallenge.provided_ops[1].id:
+            ns.player.current_challenge.move(0, 1)
+        elif op.id is MinerChallenge.provided_ops[2].id:
+            ns.player.current_challenge.move(1, 0)
+        elif op.id is MinerChallenge.provided_ops[3].id:
+            ns.player.current_challenge.move(-1, 0)
+        if ns.player.current_challenge.is_at_dest():
+            ns = ChallengeMenuState(ns)
+            passed, score = ns.player.current_challenge.submit(ns.player)
+            philosophy = """We did not put actual information in this challenge, since it is just a model. This challenge supposed to show how to process information in your daily lives.
+This model is telling you not only obtain the useful information, but also receive information in order. People cannot process too much information at one time, but break them down into small pieces will make things better.
+This challenge is a representation about 'Velocity' in Big Data."""
+            ns.remove_challenge()
+            if passed:
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
+                        .before("Great job!", f"You solved the challenge with a score of {score}!"))
+            else:
+                return (MessageDisplayState.show_message(ns, "", philosophy, False)
+                        .before("Nice try!", f"You only have a score of {score}."))
+        return ns
+
+    def describe_state(self):
+        map = self.player.current_challenge.map
+        map_size = self.player.current_challenge.map_size
+
+        def is_player(row, col):
+            return self.player.current_challenge.x is col and self.player.current_challenge.y is row
+
+        return "\n".join([f"[{', '.join(['4' if is_player(row, col) else str(map[row][col]) for col in range(map_size)])}]" for row in range(map_size)])
+
+    def __str__(self):
+        return f"{super().__str__()}\n{self.describe_state()}"
+
+
 class Challenges:
     all = [
         (lambda level: NewsSortingChallenge.random(level),
@@ -1069,7 +1188,10 @@ class Challenges:
          MythBusterChallenge),
         (lambda level: InstantMemChallenge.random(level),
          lambda old: InstantMemChallengeState(old=old),
-         InstantMemChallenge)
+         InstantMemChallenge),
+        (lambda level: MinerChallenge.random(level),
+         lambda old: MinerChallengeState(old=old),
+         MinerChallenge)
     ]
 
 
