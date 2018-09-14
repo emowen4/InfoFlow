@@ -19,8 +19,8 @@ class Style:
     color_text = "#E4E4E4"
     color_border = "#373737"
     font_name_default = "Helvetica"
-    font_size_title = 20
-    font_size_normal = 14
+    font_size_title = 30
+    font_size_normal = 20
     border_default = "ridge"
 
     loaded_fonts = {}
@@ -116,7 +116,7 @@ class StateDisplay(tk.Frame):
                                                   font=Style.get_font("Chiller", Style.font_size_title, bold=True), bg=Style.color_background, fg=Style.color_text)
         self.frame_state_describe.grid(row=2, column=0, columnspan=3, padx=4, pady=4, ipadx=4, ipady=4, sticky=N + S + W + E)
         self.label_state_describe = tk.Label(self.frame_state_describe, font=Style.get_font("Consolas", Style.font_size_normal),
-                                             bg=Style.color_background, fg=Style.color_text, justify=tk.CENTER, anchor=N + W, wraplength=1200)
+                                             bg=Style.color_background, fg=Style.color_text, justify=tk.CENTER, anchor=N + W, wraplength=1400)
         self.label_state_describe.pack(expand=True)
         # set grid auto expand
         self.grid_auto_expand(parent, 2, 2, row_weights=[0, 0, 1], col_weights=[0, 1, 0])
@@ -234,7 +234,7 @@ class GameStartStateRenderer(StateRenderer):
     def init(self, display):
         self.rect_outer = display.canvas_game.create_rectangle(200, 150, 400, 250, width=4, fill=Style.color_text, outline=Style.color_text)
         self.rect_inner = display.canvas_game.create_rectangle(204, 154, 396, 246, width=2, fill=Style.color_text, outline=Style.color_background)
-        self.font_title = Style.get_font("Gill Sans MT", 28, True, nocache=True)
+        self.font_title = Style.get_font("Gill Sans MT", 40, True, nocache=True)
         self.text_title = display.canvas_game.create_text(300, 200, text="Info Flow", fill=Style.color_background, font=self.font_title)
         self.rains = [GameStartStateRenderer.Rain.random() for _ in range(40)]
         self.text_rains = []
@@ -286,15 +286,15 @@ class GameStartStateRenderer(StateRenderer):
 class ChallengeMenuStateRenderer(StateRenderer):
     def init(self, display):
         self.c_menus = [[i * 100 + 50, 100 + 50 * i, random.randint(0, 50), random.randint(0, 10), .5, .5] for i in range(4)]
-        self.font = Style.get_font(Style.font_name_default, 16, italic=True)
+        self.font = Style.get_font(Style.font_name_default, 28, italic=True)
         self.label_accept = display.canvas_game.create_text(self.c_menus[0][0], self.c_menus[0][1], anchor=W,
-                                                            text=OperatorIds.CHALLENGE_ACCEPT.name, fill=Style.color_text, font=self.font)
-        self.label_decine = display.canvas_game.create_text(self.c_menus[1][0], self.c_menus[1][1], anchor=W,
-                                                            text=OperatorIds.CHALLENGE_DECINE.name, fill=Style.color_text, font=self.font)
+                                                            text=OperatorIds.CHALLENGE_ACCEPT.value, fill=Style.color_text, font=self.font)
+        self.label_decline = display.canvas_game.create_text(self.c_menus[1][0], self.c_menus[1][1], anchor=W,
+                                                            text=OperatorIds.CHALLENGE_DECLINE.value, fill=Style.color_text, font=self.font)
         self.label_pay = display.canvas_game.create_text(self.c_menus[2][0], self.c_menus[2][1], anchor=W,
-                                                         text=OperatorIds.PAY_DEBT.name, fill=Style.color_text, font=self.font)
+                                                         text=OperatorIds.PAY_DEBT.value, fill=Style.color_text, font=self.font)
         self.label_finish_round = display.canvas_game.create_text(self.c_menus[3][0], self.c_menus[3][1], anchor=W,
-                                                                  text=OperatorIds.FINISH_ROUND.name, fill=Style.color_text, font=self.font)
+                                                                  text=OperatorIds.FINISH_ROUND.value, fill=Style.color_text, font=self.font)
 
     def is_static_renderer(self):
         return False
@@ -311,7 +311,7 @@ class ChallengeMenuStateRenderer(StateRenderer):
             if t[3] <= 0 or t[3] >= 10:
                 t[5] = -t[5]
         display.canvas_game.coords(self.label_accept, self.c_menus[0][0], self.c_menus[0][1])
-        display.canvas_game.coords(self.label_decine, self.c_menus[1][0], self.c_menus[1][1])
+        display.canvas_game.coords(self.label_decline, self.c_menus[1][0], self.c_menus[1][1])
         display.canvas_game.coords(self.label_pay, self.c_menus[2][0], self.c_menus[2][1])
         display.canvas_game.coords(self.label_finish_round, self.c_menus[3][0], self.c_menus[3][1])
 
@@ -322,27 +322,27 @@ class ChallengeMenuStateRenderer(StateRenderer):
         if last_state.selected_operator.id is OperatorIds.CHALLENGE_ACCEPT:
             self.pos_select = self.c_menus[0]
             self.text_select = self.label_accept
-        elif last_state.selected_operator.id is OperatorIds.CHALLENGE_DECINE:
+        elif last_state.selected_operator.id is OperatorIds.CHALLENGE_DECLINE:
             self.pos_select = self.c_menus[1]
-            self.text_select = self.label_decine
+            self.text_select = self.label_decline
         elif last_state.selected_operator.id is OperatorIds.PAY_DEBT:
             self.pos_select = self.c_menus[2]
             self.text_select = self.label_pay
         elif last_state.selected_operator.id is OperatorIds.FINISH_ROUND:
             self.pos_select = self.c_menus[3]
             self.text_select = self.label_finish_round
-        self.size_select = 16
+        self.size_select = 28
         self.font_select = Style.get_font(Style.font_name_default, self.size_select, bold=True, italic=True, nocache=True)
 
     def post_dynamic_render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
-        if self.size_select < 22:
+        if self.size_select < 44:
             display.canvas_game.itemconfigure(self.text_select, font=self.font_select)
             self.font_select.configure(size=self.size_select + 2)
-            self.size_select += 2
+            self.size_select += 8
             return True
         elif self.pos_select[0] < 650:
             display.canvas_game.coords(self.text_select, self.pos_select[0], self.pos_select[1])
-            self.pos_select[0] += 50
+            self.pos_select[0] += 60
             return True
         else:
             return False
@@ -355,12 +355,12 @@ class MessageDisplayStateRenderer(StateRenderer):
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         if state.show_title:
-            display.canvas_game.create_oval(70, 50, 100, 80, fill=Style.color_text, outline=Style.color_text)
-            display.canvas_game.create_oval(72, 52, 98, 78, fill=Style.color_background, outline=Style.color_text)
-            display.canvas_game.create_text(85, 65, text="i", fill=Style.color_text, font=Style.get_font("Impact", 18, bold=True))
-            display.canvas_game.create_text(105, 65, text=state.title, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_title, bold=True),
+            #display.canvas_game.create_oval(70, 50, 100, 80, fill=Style.color_text, outline=Style.color_text)
+            #display.canvas_game.create_oval(72, 52, 98, 78, fill=Style.color_background, outline=Style.color_text)
+            #display.canvas_game.create_text(85, 65, text="i", fill=Style.color_text, font=Style.get_font("Impact", 18, bold=True))
+            display.canvas_game.create_text(45, 35, text=state.title, fill=Style.color_text, font=Style.get_font(Style.font_name_default, Style.font_size_title, bold=True),
                                             anchor=tk.W, width=500)
-            display.canvas_game.create_text(50, 100, text=state.info, fill=Style.color_text,
+            display.canvas_game.create_text(50, 60, text=state.info, fill=Style.color_text,
                                             font=Style.get_font(Style.font_name_default,
                                                                 Style.font_size_normal if len(state.info.split(". ") + state.info.split("\n")) < 8 else Style.font_size_normal - 2),
                                             anchor=tk.NW, width=500)
@@ -378,7 +378,7 @@ class NewsSortingChallengeStateRenderer(StateRenderer):
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         display.canvas_game.create_text(300, 200, text=f"News: {state.player.current_challenge.to_sort[state.news_index]}", fill=Style.color_text,
-                                        font=Style.get_font(Style.font_name_default, 20), width=550)
+                                        font=Style.get_font(Style.font_name_default, 40), width=550)
 
 
 class MythBusterChallengeStateRenderer(StateRenderer):
@@ -388,7 +388,7 @@ class MythBusterChallengeStateRenderer(StateRenderer):
     def render(self, display: 'StateDisplay', state: 'State', last_state: 'State'):
         super().render(display, state, last_state)
         display.canvas_game.create_text(300, 200, text=f"Statement: {state.player.current_challenge.myths[state.myth_index]}", fill=Style.color_text,
-                                        font=Style.get_font(Style.font_name_default, 20), width=550)
+                                        font=Style.get_font(Style.font_name_default, 40), width=550)
 
     def is_static_post_renderer(self):
         return False
@@ -402,8 +402,8 @@ class MythBusterChallengeStateRenderer(StateRenderer):
             self.content_seal = None
         if self.content_seal:
             self.rect_seal = display.canvas_game.create_oval(300, 200, 500, 280, fill="red", outline="red")
-            self.font_seal = Style.get_font("Arial", 24, True, nocache=True)
-            self.font_size = 24
+            self.font_seal = Style.get_font("Arial", 40, True, nocache=True)
+            self.font_size = 40
             self.text_seal = display.canvas_game.create_text(400, 240, text=self.content_seal, fill=Style.color_foreground, font=self.font_seal)
             self.size_outline = 1
 
@@ -418,7 +418,7 @@ class MythBusterChallengeStateRenderer(StateRenderer):
             return False
 
 
-class CocoChallengeStateRenderer(StateRenderer):
+class InstantMemChallengeStateRenderer(StateRenderer):
     def init(self, display):
         pass
 
@@ -426,11 +426,11 @@ class CocoChallengeStateRenderer(StateRenderer):
         super().render(display, state, last_state)
         if state.phase_index is 0:
             display.canvas_game.create_text(300, 200, text=f"{state.describe_state()}", fill=Style.color_text,
-                                            font=Style.get_font(Style.font_name_default, 20), width=550)
+                                            font=Style.get_font(Style.font_name_default, 24), width=550)
         elif state.phase_index is 1:
             display.canvas_game.create_text(50, 50, text=f"{state.describe_state()}", fill=Style.color_text,
                                             anchor=tk.NW,
-                                            font=Style.get_font(Style.font_name_default, 16), width=550)
+                                            font=Style.get_font(Style.font_name_default, 24), width=550)
 
 
 StateRenderer.all = {
@@ -439,7 +439,7 @@ StateRenderer.all = {
     MessageDisplayState: lambda: MessageDisplayStateRenderer(),
     NewsSortingChallengeState: lambda: NewsSortingChallengeStateRenderer(),
     MythBusterChallengeState: lambda: MythBusterChallengeStateRenderer(),
-    CocoChallengeState: lambda: CocoChallengeStateRenderer()
+    InstantMemChallengeState: lambda: InstantMemChallengeStateRenderer()
 }
 
 
