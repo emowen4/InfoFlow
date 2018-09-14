@@ -1,5 +1,6 @@
-#Info Flow
-##Game Abstract:
+# Info Flow
+
+## Game Abstract:
 According to Alvin Toffler:
 > information overload occurs when **the amount of input to a system exceeds its processing capacity**. Decision makers have fairly limited cognitive processing capacity. Consequently, when information overload occurs, it is likely that a reduction in decision quality will occur. In daily life, when a person receives an excessive quantity of daily information, the person may have difficulty of understanding an issue and effectively making decisions. 
 
