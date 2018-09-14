@@ -426,11 +426,11 @@ class InstantMemChallengeStateRenderer(StateRenderer):
         super().render(display, state, last_state)
         if state.phase_index is 0:
             display.canvas_game.create_text(300, 200, text=f"{state.describe_state()}", fill=Style.color_text,
-                                            font=Style.get_font(Style.font_name_default, 24), width=550)
+                                            font=Style.get_font(Style.font_name_default, 20), width=550)
         elif state.phase_index is 1:
             display.canvas_game.create_text(50, 50, text=f"{state.describe_state()}", fill=Style.color_text,
                                             anchor=tk.NW,
-                                            font=Style.get_font(Style.font_name_default, 24), width=550)
+                                            font=Style.get_font(Style.font_name_default, 20), width=550)
 
 
 class MinerChallengeStateRenderer(StateRenderer):
