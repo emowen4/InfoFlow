@@ -7,9 +7,9 @@ problem formulation.  It is important that COMMON_CODE come
 before all the other sections (except METADATA), including COMMON_DATA.
 '''
 # <METADATA>
-SOLUZION_VERSION = "0.1"
+SOLUZION_VERSION = "4.0"
 PROBLEM_NAME = "Info Flow"
-PROBLEM_VERSION = "0.1"
+PROBLEM_VERSION = "4.0"
 PROBLEM_AUTHORS = ["Dylan Li", "Joey Pan", "Owen Wang", "Shirley Zhang"]
 PROBLEM_CREATION_DATE = "04-Sep-2018"
 PROBLEM_DESC = (
@@ -20,9 +20,9 @@ A platform gradually emerges which offers huge amounts of money for employees. T
 complicated information using human power. However, once you choose this platform, all your personal information,
 including privacy, will be released to this platform. It offers a variety of tasks and bonus to its users.
 Some of those challenges are complicated, ranging from physical work to careful thinking.
-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
     You are a college student. Yesterday, there was a group of people breaking into your house and telling you that
-your father owes them a huge amount of money ($1000) in gambling. You have decided to drop school and pay off the debt.
+your father owes them a huge amount of money ($300) in gambling. You have decided to drop school and pay off the debt.
 You have no solidified skills but the only platform as mentioned earlier. If you cannot pay off the debt on time,
 you will be captured and treated in a way you could never think of. You are asked to complete assigned challenges
 to pay off your debt. Today, you will be facing your first challenge from this platform. What will that be...?'''
@@ -49,7 +49,7 @@ class PlayerInfo:
                  canceled: int = 0,
                  challenge_count: int = 0,
                  money: int = 0 if not Debug.debug else 100,
-                 debt: int = 500 if not Debug.debug else 100,
+                 debt: int = 300 if not Debug.debug else 100,
                  energy: int = 100,
                  info_got: int = 0,
                  current_challenge: 'Challenge' = None,
@@ -144,7 +144,7 @@ class PlayerInfo:
 class OperatorIds(Enum):
     MENU_CONTINUE = "Continue..."
     CHALLENGE_ACCEPT = "Accept the challenge"
-    CHALLENGE_DECINE = "Decine the challenge"
+    CHALLENGE_DECLINE = "Decline the challenge"
     CHALLENGE_CANCEL = "Cancel the accepted challenge"
     PAY_DEBT = "Pay off the debt"
     FINISH_ROUND = "End round"
@@ -365,7 +365,7 @@ class ChallengeMenuState(State):
         return (super().is_applicable_operator(op)
                 or (not self.has_challenge()
                     and ((self.player.energy >= self.random_challenge[0].energy_consume() and op.id is OperatorIds.CHALLENGE_ACCEPT)
-                         or op.id is OperatorIds.CHALLENGE_DECINE)))
+                         or op.id is OperatorIds.CHALLENGE_DECLINE)))
 
     def apply_operator(self, op: 'Operator'):
         self.store_operator(op)
@@ -376,7 +376,7 @@ class ChallengeMenuState(State):
             ns.player.current_challenge = self.random_challenge[0]
             ns.player.current_challenge.accept(ns.player)
             return ns.check_win_lose_state()
-        elif op.id is OperatorIds.CHALLENGE_DECINE:
+        elif op.id is OperatorIds.CHALLENGE_DECLINE:
             ns = ChallengeMenuState(old=self)
             ns.random_challenge[0].decline(ns.player)
             ns.random_challenge = ns.__random_challenge()
@@ -752,7 +752,7 @@ class MythBusterChallenge(Challenge):
         Myth("A mole can dig a tunnel that is 300 feet long in only one night.", True),
         Myth("A hippo’s wide open mouth is big enough to fit a 4-foot-tall child in.", True),
         Myth("Chewing gum while you cut an onion will help keep you from crying.", True),
-        Myth("If you were to stretch a Slinky out until it’s flat, it would measure 8feet long.", True),
+        Myth("If you were to stretch a Slinky out until it’s flat, it would measure 8 feet long.", True),
         Myth("Al Capone’s business card said he was a used furniture dealer", True),
         Myth("There are more collect calls on Father’s Day than on any other day of the year.", True),
         Myth("Banging your head against a wall burns 150 calories an hour.", True),
@@ -877,8 +877,8 @@ This challenge is a representation of ‘Veracity’ in Big Data."""
         return f"{super().__str__()}\n{self.describe_state()}"
 
 
-class CocoChallenge(Challenge):
-    provided_ops = list([Operator("First", "COCO_FIRST"), Operator("Second", "COCO_SECOND"), Operator("Third", "COCO_THIRD")])
+class InstantMemChallenge(Challenge):
+    provided_ops = list([Operator("First", "INSTANTMEM_FIRST"), Operator("Second", "INSTANTMEM_SECOND"), Operator("Third", "INSTANTMEM_THIRD")])
     all_sentences = [
         ["A woman weighs the positive and negative aspects of accepting a new job.",
          "A woman does not correct a stranger who mistakes her for someone else",
@@ -947,8 +947,8 @@ class CocoChallenge(Challenge):
     level_correct_required = [.75, .5, .85, .9, .95]
 
     def __init__(self, level: int, sentences: 'Dict[int, (int, int)]', to_remember: 'List[int]', remembered: 'Dict[int]'):
-        super().__init__("Coco Challenge", level)
-        #  Stores {Index from 0 : (Index in CocoChallenge.all_sentences, Which one to remember)}
+        super().__init__("InstantMem Challenge", level)
+        #  Stores {Index from 0 : (Index in InstantMemChallenge.all_sentences, Which one to remember)}
         self.sentences = sentences
         # Stores Index in self.sentences
         self.to_remember = to_remember
@@ -961,11 +961,11 @@ class CocoChallenge(Challenge):
             p.add_info_got(3)
             if self.sentences[i][1] == self.remembered[i]:
                 correct += 1
-                p.score += CocoChallenge.score_correct_sentences
+                p.score += InstantMemChallenge.score_correct_sentences
             else:
-                p.score -= CocoChallenge.score_incorrect_sentences
+                p.score -= InstantMemChallenge.score_incorrect_sentences
         correct_level = correct / len(self.to_remember)
-        if correct_level >= CocoChallenge.level_correct_required[self.level]:
+        if correct_level >= InstantMemChallenge.level_correct_required[self.level]:
             self.set_finished(p, correct_level)
             return True, correct_level
         else:
@@ -973,70 +973,70 @@ class CocoChallenge(Challenge):
             return False, correct_level
 
     def clone(self):
-        return CocoChallenge(self.level, deepcopy(self.sentences), deepcopy(self.to_remember), deepcopy(self.remembered))
+        return InstantMemChallenge(self.level, deepcopy(self.sentences), deepcopy(self.to_remember), deepcopy(self.remembered))
 
     @staticmethod
-    def random(level: int) -> "CocoChallenge":
+    def random(level: int) -> "InstantMemChallenge":
         count = (level + 2) * 2 if not Debug.debug else 1
         count_tr = level + 1 if not Debug.debug else 1
         sentence_set, sentences, to_remember = set(), {}, []
         c = 0
         while len(sentence_set) < count:
-            r = randrange(0, len(CocoChallenge.all_sentences))
+            r = randrange(0, len(InstantMemChallenge.all_sentences))
             if r not in sentence_set:
                 sentence_set.add(r)
                 sentences[c] = (r, randrange(0, 3))
                 c += 1
                 if len(to_remember) < count_tr:
                     to_remember.append(c)
-        return CocoChallenge(level, sentences, to_remember, {})
+        return InstantMemChallenge(level, sentences, to_remember, {})
 
 
-class CocoChallengeState(ChallengeState):
+class InstantMemChallengeState(ChallengeState):
     def __init__(self, old: 'State' = None):
         super().__init__(old)
-        if old and isinstance(old, CocoChallengeState):
+        if old and isinstance(old, InstantMemChallengeState):
             self.phase_index = old.phase_index
-            self.coco_index = old.coco_index + 1
+            self.instant_mem_index = old.instant_mem_index + 1
         else:
             self.phase_index = 0
-            self.coco_index = 0
+            self.instant_mem_index = 0
 
     def is_applicable_operator(self, op: 'Operator'):
         return (super().is_applicable_operator(op)
                 or (self.phase_index is 0 and op.id is OperatorIds.MENU_CONTINUE)
-                or (self.phase_index is 1 and op in CocoChallenge.provided_ops))
+                or (self.phase_index is 1 and op in InstantMemChallenge.provided_ops))
 
     def apply_operator(self, op: 'Operator'):
         self.store_operator(op)
         if super().is_applicable_operator(op):
             return super().apply_operator(op)
         if self.phase_index is 0:
-            ns = CocoChallengeState(self)
-            if ns.coco_index == len(ns.player.current_challenge.sentences):
+            ns = InstantMemChallengeState(self)
+            if ns.instant_mem_index == len(ns.player.current_challenge.sentences):
                 ns.phase_index = 1
-                ns.coco_index = 0
-                return MessageDisplayState.show_message(ns, "Warning~", "Now is the time to test your memories. Hope you still remember these information!")
+                ns.instant_mem_index = 0
+                return MessageDisplayState.show_message(ns, "Warning~", "Now is the time to test your memorizations. Hope you still remember these information!")
             else:
                 return ns
         elif self.phase_index is 1:
-            if self.coco_index + 1 < len(self.player.current_challenge.to_remember):
-                ns = CocoChallengeState(self)
-                ns.player.current_challenge.remembered[self.coco_index] = (
-                    0 if op.id is CocoChallenge.provided_ops[0]
-                    else 1 if op.id is CocoChallenge.provided_ops[1]
-                    else 2 if op.id is CocoChallenge.provided_ops[2]
+            if self.instant_mem_index + 1 < len(self.player.current_challenge.to_remember):
+                ns = InstantMemChallengeState(self)
+                ns.player.current_challenge.remembered[self.instant_mem_index] = (
+                    0 if op.id is InstantMemChallenge.provided_ops[0]
+                    else 1 if op.id is InstantMemChallenge.provided_ops[1]
+                    else 2 if op.id is InstantMemChallenge.provided_ops[2]
                     else -1)
                 return ns
             else:
                 ns = ChallengeMenuState(self)
-                ns.player.current_challenge.remembered[self.coco_index] = (
-                    0 if op.id is CocoChallenge.provided_ops[0].id
-                    else 1 if op.id is CocoChallenge.provided_ops[1].id
-                    else 2 if op.id is CocoChallenge.provided_ops[2].id
+                ns.player.current_challenge.remembered[self.instant_mem_index] = (
+                    0 if op.id is InstantMemChallenge.provided_ops[0].id
+                    else 1 if op.id is InstantMemChallenge.provided_ops[1].id
+                    else 2 if op.id is InstantMemChallenge.provided_ops[2].id
                     else -1)
-                philosophy = """To be honest, all sentences are from the Official Guide of SAT test. So you can relax since you wont see things like this in your daily life ^^.
-But it is still a miniature of all information we receive. Just imagine, our brains are exposed to approximately 34 gigabytes of information while most of them are spam.
+                philosophy = """In fact, all those statements are from the Official Guide of SAT test. So you can relax because you won't see things like this in your daily life ^^.
+But it is still a miniature of all information we receive. Just imagine, we are exposed to approximately 34 gigabytes of information while most of them are spam.
 This challenge is a representation of 'Volume' in Big Data."""
                 passed, corr = ns.player.current_challenge.submit(ns.player)
                 ns.finish_challenge()
@@ -1048,12 +1048,12 @@ This challenge is a representation of 'Volume' in Big Data."""
                             .before("Nice try!", f"You only have a {int(corr * 100)}% completion."))
 
     def describe_state(self):
-        s = self.player.current_challenge.sentences[self.coco_index]
+        s = self.player.current_challenge.sentences[self.instant_mem_index]
         if self.phase_index is 0:
-            return f"Memorize this information:\n    {CocoChallenge.all_sentences[s[0]][s[1]]}"
+            return f"Memorize this information:\n    {InstantMemChallenge.all_sentences[s[0]][s[1]]}"
         elif self.phase_index is 1:
-            choices = ''.join([f'\n    {CocoChallenge.provided_ops[ind].name}: {s}' for ind, s in enumerate(self.player.current_challenge.all_sentences[s[0]])])
-            return f"Which was shown before in Memorization #{self.coco_index}:\n{choices}"
+            choices = ''.join([f'\n    {InstantMemChallenge.provided_ops[ind].name}: {s}' for ind, s in enumerate(self.player.current_challenge.all_sentences[s[0]])])
+            return f"Which was shown before in Memorization #{self.instant_mem_index}:\n{choices}"
 
     def __str__(self):
         return f"{super().__str__()}\n{self.describe_state()}"
@@ -1067,9 +1067,9 @@ class Challenges:
         (lambda level: MythBusterChallenge.random(level),
          lambda old: MythBusterChallengeState(old=old),
          MythBusterChallenge),
-        (lambda level: CocoChallenge.random(level),
-         lambda old: CocoChallengeState(old=old),
-         CocoChallenge)
+        (lambda level: InstantMemChallenge.random(level),
+         lambda old: InstantMemChallengeState(old=old),
+         InstantMemChallenge)
     ]
 
 
